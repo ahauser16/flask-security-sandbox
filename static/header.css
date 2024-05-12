@@ -1,0 +1,142 @@
+header {
+    background: lightskyblue;
+    padding: 1em 0;
+    text-align: center;
+}
+
+.nav {
+    width: 100%;
+}
+
+.nav-toggle {
+    cursor: pointer;
+    border: 0;
+    width: 3em;
+    height: 3em;
+    padding: 0em;
+    border-radius: 50%;
+    background: #072a2d;
+    color: white;
+    transition: opacity 250ms ease;
+
+    position: absolute;
+    left: 0;
+}
+
+.nav-toggle:focus,
+.nav-toggle:hover {
+    opacity: 0.75;
+}
+
+.nav-toggle--open {
+    /* Add styles for the open menu state */
+    /* For example, you can rotate the hamburger icon */
+    transform: rotate(90deg);
+}
+
+.hamburger {
+    width: 50%;
+    position: relative;
+}
+
+.hamburger,
+.hamburger::before,
+.hamburger::after {
+    display: block;
+    margin: 0 auto;
+    height: 3px;
+    background: white;
+}
+
+.hamburger::before,
+.hamburger::after {
+    content: "";
+    width: 100%;
+}
+
+.hamburger::before {
+    transform: translateY(-6px);
+}
+
+.hamburger::after {
+    transform: translateY(3px);
+}
+
+/* made changes here from video
+     to make it more accessible.
+     
+     Works the same :) */
+.nav {
+    visibility: hidden;
+    height: 0;
+    position: absolute;
+    font-size: 1rem;
+}
+
+.nav--visible {
+    visibility: visible;
+    height: auto;
+    position: relative;
+}
+
+.nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav__list--primary {
+    margin-bottom: 2em;
+}
+
+.nav__item {
+    margin-top: 0.75em;
+}
+
+.nav__link {
+    color: white;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.nav__link--button {
+    padding: 0.25em 0.75em;
+    background: white;
+    color: #23424a;
+    border-radius: 100px;
+}
+
+.nav__link:hover,
+.nav__link:focus {
+    opacity: 0.65;
+}
+
+@media (min-width: 800px) {
+    .nav-toggle {
+        display: none;
+    }
+
+    .nav {
+        visibility: visible;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: auto;
+        position: relative;
+
+    }
+
+    .nav__list {
+        display: flex;
+        margin: 0;
+    }
+
+    /* the css code below would center the HOME. ABOUT, CONTACT group of links to the center of the page.   
+    .nav__list--primary {
+      margin: 0 auto;
+    } */
+
+    .nav__item {
+        margin: 0 0 0 1.5em;
+    }
+}

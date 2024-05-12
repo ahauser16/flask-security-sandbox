@@ -1,0 +1,30 @@
+          List of relations
+ Schema |    Name     | Type  | Owner 
+--------+-------------+-------+-------
+ public | role        | table | haus
+ public | roles_users | table | haus
+ public | user        | table | haus
+(3 rows)
+
+          List of relations
+ Schema |    Name     | Type  | Owner 
+--------+-------------+-------+-------
+ public | role        | table | haus
+ public | roles_users | table | haus
+ public | user        | table | haus
+(3 rows)
+
+          List of relations
+ Schema |    Name     | Type  | Owner 
+--------+-------------+-------+-------
+ public | role        | table | haus
+ public | roles_users | table | haus
+ public | user        | table | haus
+(3 rows)
+
+                                   List of roles
+ Role name |                         Attributes                         | Member of 
+-----------+------------------------------------------------------------+-----------
+ haus      | Superuser, Create role, Create DB                          | {}
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+

@@ -1,29 +1,152 @@
 <!-- index.html -->
-
-<!-- links to the pages -->
-<a href="/teachers">View all Teachers</a> (Access: Admin)<br /><br />
-<a href="/staff">View all Staff</a> (Access: Admin, Teacher)<br /><br />
-<a href="/students">View all Students</a> (Access: Admin, Teacher, Staff)<br /><br />
-<a href="/mydetails">View My Details</a> (Access: Admin, Teacher, Staff,
-Student)<br /><br />
-
-{% if 'Admin' in current_user.roles or 'Teacher' in current_user.roles %}
-<a href="/teacherslounge">Enter The Secret Lounge!</a> (Access: Admin,
-Teacher)<br /><br />
-{% endif %}
-
-<!-- Show only if user is logged in -->
-
-{% if current_user.is_authenticated %}
-<!-- Show current users email -->
-<b>Current user</b>: {{current_user.email}}
-<!-- Current users roles -->
-| <b>Role</b>: {% for role in current_user.roles%} {{role.name}} {% endfor %}
-<br /><br />
-<!-- link for logging out -->
-<a href="/logout">Logout</a>
-<!-- Show if user is not logged in -->
-{% else %}
-<a href="/signup">Sign up</a> | <a href="/signin">Sign in</a>
-{% endif %}
-<br /><br />
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>eNotaryNYServices</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}">
+  </head>
+  <body>
+    <header>
+      <div class="container row">
+        <button id="nav-toggle" class="nav-toggle" aria-label="open navigation">
+            <span class="hamburger"></span>
+        </button>
+        <a href="/" class="logoContainer">
+            <h1>Notarious</h1>
+        </a>
+      
+        <nav class="nav" id="nav">
+                <ul class="nav__list nav__list--primary">
+                    <!-- links to the pages -->
+                    <li class="nav__item">
+                        <a href="/teachers" class="nav__link" title="Access: Admin">Teachers List</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="/staff" class="nav__link" title="Access: Admin, Teacher">Staff List</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="/students" class="nav__link" title="Access: Admin, Teacher, Staff">Students List</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="/mydetails" class="nav__link" title="Access: Admin, Teacher, Staff, Student">My Details</a>
+                    </li>
+                    {% if 'Admin' in current_user.roles or 'Teacher' in current_user.roles%}
+                    <li class="nav__item">
+                        <a href="/teacherslounge" class="nav__link" title="Access: Admin, Teacher">Enter The Secret Lounge!</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="nav__list nav__list--secondary">
+                    <!-- Show only if user is logged in -->
+                    {% if current_user.is_authenticated %}
+                    <!-- Show current users email -->
+                    <div class="">
+                        <b>Current user</b>
+                        <p>{{current_user.email}}</p>
+                    </div>
+                    <!-- Current users roles -->
+                    <div class="">
+                        <b>Role</b>
+                        <p>{% for role in current_user.roles%} {{role.name}} {% endfor %}</p>
+                    </div>
+                    <!-- link for logging out -->
+                    <li class="nav__item">
+                        <a href="/logout" class="nav__link">Logout</a>
+                    </li>
+                    <!-- Show if user is not logged in -->
+                    {% else %}
+                    <li class="nav__item">
+                        <a href="/signup" class="nav__link">Sign up</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="/signin" class="nav__link">Sign in</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <h2>Welcome to Notarious</h2>
+        <p>
+            This is a simple web application that demonstrates how to use Flask and
+            Flask-Security to create a web application with user authentication and
+            authorization.
+        </p>
+        <p>
+            The application has four types of users: Admin, Teacher, Staff, and
+            Student. Each user has different access levels to the application.
+        </p>
+        <p>
+            The application has the following pages:
+            <ul>
+            <li>
+                <b>View all Teachers</b>: This page is accessible only to Admin
+                users. It shows a list of all teachers in the system.
+            </li>
+            <li>
+                <b>View all Staff</b>: This page is accessible to Admin and Teacher
+                users. It shows a list of all staff in the system.
+            </li>
+            <li>
+                <b>View all Students</b>: This page is accessible to Admin, Teacher,
+                and Staff users. It shows a list of all students in the system.
+            </li>
+            <li>
+                <b>View My Details</b>: This page is accessible to all users. It
+                shows the details of the currently logged-in user.
+            </li>
+            <li>
+                <b>Enter The Secret Lounge!</b>: This page is accessible only to
+                Admin and Teacher users. It is a secret page that only Admin and
+                Teacher users can access.
+            </li>
+            </ul>
+        </p>
+        <p>
+            The application uses Flask-Security to manage user authentication and
+            authorization. Flask-Security provides features such as user
+            registration, login, logout, password reset, and role-based access
+            control.
+        </p>
+        <p>
+            The application uses Flask-Migrate to manage database migrations. Flask-
+            Migrate provides a way to create, apply, and manage database migrations
+            using Alembic.
+        </p>
+        <p>
+            The application uses Flask-Login to manage user sessions. Flask-Login
+            provides features such as user session management, user authentication,
+            and user authorization.
+        </p>
+        <p>
+            The application uses Flask-Principal to manage user roles and
+            permissions. Flask-Principal provides features such as role-based access
+            control, permission management, and user role assignment.
+    </main>
+    <footer>
+        <p>&copy; 2021 Notarious</p>
+    </footer>
+    <script>
+        var navToggle = document.getElementById('nav-toggle');
+        var nav = document.getElementById('nav');
+        
+        navToggle.onclick = function() {
+          if (navToggle.classList.contains('nav-toggle--open')) {
+            navToggle.classList.remove('nav-toggle--open');
+          } else {
+            navToggle.classList.add('nav-toggle--open');
+          }
+      
+          if (nav.classList.contains('nav--visible')) {
+            nav.classList.remove('nav--visible');
+          } else {
+            nav.classList.add('nav--visible');
+          }
+        };
+      </script>
+  </body>
+</html>

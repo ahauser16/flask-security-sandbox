@@ -12,10 +12,10 @@ from flask_login import LoginManager, login_manager, login_user
 # pass current module (__name__) as argument to `Flask()` which will initialize the instance
 app = Flask(__name__)
 
-# path to sqlite database which will create the db file in instance if the db is not  already present
+# path to psql database which will create the db file in instance if the db is not  already present
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///flask_rbac_tutorial"
 # needed for session cookies
-app.config["SECRET_KEY"] = "MY_SECRET"
+app.config["SECRET_KEY"] = "count_duckula"
 # hashes the password and then stores in the database
 app.config["SECURITY_PASSWORD_SALT"] = "MY_SECRET"
 # allows new registrations to application
@@ -35,7 +35,6 @@ roles_users = db.Table(
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
     db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
 )
-
 
 # create table in database for storing users
 class User(db.Model, UserMixin):
