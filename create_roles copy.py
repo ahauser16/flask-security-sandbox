@@ -3,14 +3,14 @@ from app import Role, User, db
 
 def create_roles():
     admin = Role(id=1, name='Admin')
-    principal = Role(id=2, name='Principal')
-    trad_notary = Role(id=3, name='Traditional Notary')
-    e_notary = Role(id=4, name='Electronic Notary')
+    teacher = Role(id=2, name='Teacher')
+    staff = Role(id=3, name='Staff')
+    student = Role(id=4, name='Student')
 
     db.session.add(admin)
-    db.session.add(principal)
-    db.session.add(trad_notary)
-    db.session.add(e_notary)
+    db.session.add(teacher)
+    db.session.add(staff)
+    db.session.add(student)
 
     db.session.commit()
     print("Roles created successfully!")

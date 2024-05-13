@@ -54,3 +54,35 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
 - `\i filename` : Execute commands from a file. Replace filename with the name of the file you want to execute commands from.
 - `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
 - `\q` : Quit psql.
+
+## notes to refactor from school use case to my use case:
+1. change roles from Admin, Teacher, Staff and Student to Admin, Principal, Traditional Notary and Electronic Notary
+2. files to be refactored:
+   - `app.py`
+     - copy `app.py` and save it as `app_copy.py` in case you want to start the refactor over again.
+      - you will have to add logic to the `def signin()` route where if the user picks "traditioanal notary" or "electronic notary" then a second signin screen shows up that asks for their commission details: full name, commission id, commissioned county and commission start and expiration dates.
+     - you don't have to change the `roles_users` table, `User Class` or `Role Class`.
+     - you don't have to change the `def signin()` route.
+     - 
+   - `index.html`
+      - save original file as "index_notes.html" in case you need to refer to it later.
+      - replace old roles with new roles and new routes.
+   - `signup.html`
+       - replace old roles with new roles.  The `value` matches up to the ids as defined in the `create_roles.py` file (I think).
+   - `mydetails.html`
+     - change to `myaccount.html` and this page will essentially be an index of all the account subcategories that will vary depending on the user's role.  For now implement the following subcategories:
+       - admins, principals, trad notaries and e-notaries: 
+         - `contactinfo.html`: first name, last name, email, phone number
+         - `contactaddress.html`: street address line 1, street address line 2, City, State, Zip code
+         - `billing.html`: embed a Stripe API component here which should include first name on cc, last name on cc, cc number, expiration, cvv, billing address line 1, billing address line 2, billing address City, billing address State, billing address Zip code.
+         - `scheduling.html`: embed a booking component here that uses a calendar and has bookling logic.  Maybe include a preferred contact method (email vs phone) and a public notes section.
+         - `mynotaries.html`: redirect to the /Explore route that has the table and CRUD operations or maybe embed the table with CRUD operations into this page.
+         - `mydocuments.html`: embed a table with file upload capability.  this will require setting up firebase document account to the user.
+         - `e-signature.html`: embed the docusign test feature here, 
+         - `backgroundinfo.html`: this will also use Firebase to store the avatar image.  Other info can be stored here such as teleconference options, languages spoken, specializations, certifications, current employer & title, etc.  This may be a good placehold for if a user wants to incorporate their LinkedIn information.
+   - `signin.html`
+     - unchanged
+   - `staff.html`, `students.html`, `teachers.html`, `teacherslounge.html`
+     - depracated; no longer need but keep as a reference 
+   - `create_roles.py`
+     - you will have to refactor this by changing the role names and you may want to change the ids from integers to text but this may have a negligible impact on the final code post refactor.
