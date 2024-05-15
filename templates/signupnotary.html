@@ -1,0 +1,28 @@
+<!-- signupnotary.html -->
+
+<h2>Notary Authentication</h2>
+
+{% if error %}
+    <p>{{ error }}</p>
+{% endif %}
+
+<!-- Form for notary authentication -->
+<form action="#" method="POST" id="notary-auth-form">
+    <label>Full Name </label>
+    <input type="text" name="full_name" required /><br><br>
+
+    <label>Commission ID </label>
+    <input type="text" name="commission_id" required/><br><br>
+
+    <label>Commissioned County </label>
+    <input type="text" name="commissioned_county" required/><br><br>
+
+    <label>Commission Start Date </label>
+    <input type="date" name="commission_start_date" required/><br><br>
+
+    <label>Commission Expiration Date </label>
+    <input type="date" name="commission_expiration_date" required/><br><br>
+
+    <button type="submit">Submit</button><br><br>
+</form>
+

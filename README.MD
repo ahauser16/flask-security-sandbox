@@ -86,3 +86,43 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
      - depracated; no longer need but keep as a reference 
    - `create_roles.py`
      - you will have to refactor this by changing the role names and you may want to change the ids from integers to text but this may have a negligible impact on the final code post refactor.
+
+## fake users login credentials
+
+enotary user test #1:
+theflash@gmail.com
+abc123
+
+enotary user test #2:
+batman@gmail.com
+abc123
+
+enotary user test #3:
+superman@gmail.com
+abc123
+
+principal user test#1
+johndoe@gmail.com
+abc123
+
+principal user test#2-post notaryauth route refactor on 5-15-24:
+bugs@bunny.com
+abc123
+
+enotary user test#1-post notaryauth route refactor on 5-15-24:
+daffythenotary@disney.com
+abc123
+[created with real notary credentials below]
+
+enotary user test#2-post notaryauth route refactor on 5-15-24:
+baloney@oscar.com
+abc123
+[created with real notary credentials below]
+
+## my public credentials
+ARTHUR John HAUSER
+01HA0018990
+Kings
+Electronic
+12/21/2023
+12/21/2027

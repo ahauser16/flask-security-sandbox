@@ -151,5 +151,17 @@
         }
       };
     </script>
+    <script>
+      document
+        .getElementById("signup-form")
+        .addEventListener("submit", function () {
+          var option = document.querySelector(
+            'input[name="options"]:checked'
+          ).value;
+          if (option == 3 || option == 4) {
+            this.action = "/notaryauth";
+          }
+        });
+    </script>
   </body>
 </html>
