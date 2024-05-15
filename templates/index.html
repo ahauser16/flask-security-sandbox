@@ -27,7 +27,7 @@
         <nav class="nav" id="nav">
           <ul class="nav__list nav__list--primary">
             <!-- links to the pages -->
-            <li class="nav__item">
+            <!-- <li class="nav__item">
               <a
                 href="/principals"
                 class="nav__link"
@@ -50,6 +50,14 @@
                 title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
                 >Electronic Notaries List</a
               >
+            </li> -->
+            <li class="nav__item">
+              <a
+                href="/findnotary"
+                class="nav__link"
+                title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+                >Find A Notary</a
+              >
             </li>
             <li class="nav__item">
               <a
@@ -57,6 +65,22 @@
                 class="nav__link"
                 title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
                 >My Details</a
+              >
+            </li>
+            <li class="nav__item">
+              <a
+                href="/myesignature"
+                class="nav__link"
+                title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+                >My E-Signature</a
+              >
+            </li>
+            <li class="nav__item">
+              <a
+                href="/notarylogbook"
+                class="nav__link"
+                title="Access Required: Admin, Traditional Notary, Electronic Notary"
+                >My Logbook</a
               >
             </li>
             <li class="nav__item">
@@ -128,7 +152,31 @@
         Flask-Security to create a web application with user authentication and
         authorization.
       </p>
-      <p>The application has the following features:</p>
+      <ul>
+        The application has role based authentication and permissions for the
+        following roles (hover over each link to view permissions):
+        <li>
+          <a
+            href="/principals"
+            title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+            >Principals List</a
+          >
+        </li>
+        <li>
+          <a
+            href="/trad_notaries"
+            title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+            >Traditional Notaries List</a
+          >
+        </li>
+        <li>
+          <a
+            href="/e_notaries"
+            title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+            >Electronic Notaries List</a
+          >
+        </li>
+      </ul>
     </main>
     <footer>
       <p>&copy; 2024 Notarious</p>

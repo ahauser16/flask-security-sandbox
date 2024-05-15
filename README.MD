@@ -3,6 +3,11 @@ https://www.geeksforgeeks.org/flask-role-based-access-control/
 
 ## reminders on how to work on this project:
 
+### ToDos: 
+
+1.  Add "Forgot Username" and "Forgot Password" feature using flask-security & flask-mailman
+
+
 ### running the application:
 
 1. There is a virtual environment already set up for this project so you need to activate it:
@@ -56,34 +61,35 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
 - `\q` : Quit psql.
 
 ## notes to refactor from school use case to my use case:
+
 1. change roles from Admin, Teacher, Staff and Student to Admin, Principal, Traditional Notary and Electronic Notary
 2. files to be refactored:
    - `app.py`
      - copy `app.py` and save it as `app_copy.py` in case you want to start the refactor over again.
-      - you will have to add logic to the `def signin()` route where if the user picks "traditioanal notary" or "electronic notary" then a second signin screen shows up that asks for their commission details: full name, commission id, commissioned county and commission start and expiration dates.
+     - you will have to add logic to the `def signin()` route where if the user picks "traditioanal notary" or "electronic notary" then a second signin screen shows up that asks for their commission details: full name, commission id, commissioned county and commission start and expiration dates.
      - you don't have to change the `roles_users` table, `User Class` or `Role Class`.
      - you don't have to change the `def signin()` route.
-     - 
+     -
    - `index.html`
-      - save original file as "index_notes.html" in case you need to refer to it later.
-      - replace old roles with new roles and new routes.
+     - save original file as "index_notes.html" in case you need to refer to it later.
+     - replace old roles with new roles and new routes.
    - `signup.html`
-       - replace old roles with new roles.  The `value` matches up to the ids as defined in the `create_roles.py` file (I think).
+     - replace old roles with new roles. The `value` matches up to the ids as defined in the `create_roles.py` file (I think).
    - `mydetails.html`
-     - change to `myaccount.html` and this page will essentially be an index of all the account subcategories that will vary depending on the user's role.  For now implement the following subcategories:
-       - admins, principals, trad notaries and e-notaries: 
+     - change to `myaccount.html` and this page will essentially be an index of all the account subcategories that will vary depending on the user's role. For now implement the following subcategories:
+       - admins, principals, trad notaries and e-notaries:
          - `contactinfo.html`: first name, last name, email, phone number
          - `contactaddress.html`: street address line 1, street address line 2, City, State, Zip code
          - `billing.html`: embed a Stripe API component here which should include first name on cc, last name on cc, cc number, expiration, cvv, billing address line 1, billing address line 2, billing address City, billing address State, billing address Zip code.
-         - `scheduling.html`: embed a booking component here that uses a calendar and has bookling logic.  Maybe include a preferred contact method (email vs phone) and a public notes section.
+         - `scheduling.html`: embed a booking component here that uses a calendar and has bookling logic. Maybe include a preferred contact method (email vs phone) and a public notes section.
          - `mynotaries.html`: redirect to the /Explore route that has the table and CRUD operations or maybe embed the table with CRUD operations into this page.
-         - `mydocuments.html`: embed a table with file upload capability.  this will require setting up firebase document account to the user.
-         - `e-signature.html`: embed the docusign test feature here, 
-         - `backgroundinfo.html`: this will also use Firebase to store the avatar image.  Other info can be stored here such as teleconference options, languages spoken, specializations, certifications, current employer & title, etc.  This may be a good placehold for if a user wants to incorporate their LinkedIn information.
+         - `mydocuments.html`: embed a table with file upload capability. this will require setting up firebase document account to the user.
+         - `e-signature.html`: embed the docusign test feature here,
+         - `backgroundinfo.html`: this will also use Firebase to store the avatar image. Other info can be stored here such as teleconference options, languages spoken, specializations, certifications, current employer & title, etc. This may be a good placehold for if a user wants to incorporate their LinkedIn information.
    - `signin.html`
      - unchanged
    - `staff.html`, `students.html`, `teachers.html`, `teacherslounge.html`
-     - depracated; no longer need but keep as a reference 
+     - depracated; no longer need but keep as a reference
    - `create_roles.py`
      - you will have to refactor this by changing the role names and you may want to change the ids from integers to text but this may have a negligible impact on the final code post refactor.
 
@@ -119,7 +125,95 @@ baloney@oscar.com
 abc123
 [created with real notary credentials below]
 
+trad_notary user test#1-post notaryauth route refactor on 5-15-24v2(second session):
+
+vladtheimpala@bleh.com
+asdgfadfhassdfgadfh
+CHAK C CHONG
+02CH5009104
+Putnam
+Traditional
+03/08/2023
+03/08/2027
+
+trad_notary user test#2-post notaryauth route refactor on 5-15-24v2(second session):
+--> fringe case where the commission id only has 10 characters but is 11 charaters long
+kangelo@aol.com
+abc123
+KAREN M D'ANGELO
+01 D6390284
+Monroe
+Traditional
+04/15/2023
+04/15/2027
+
+trad_notary user test#3-post notaryauth route refactor on 5-15-24v3(second session):
+--> fringe case where the commission id only has 10 characters but is 11 charaters long
+gpruno@bruno.com
+abc123
+GRACE PRUNO
+01 P4603811
+Suffolk
+Traditional
+01/31/2023
+01/31/2027
+
+https://data.ny.gov/resource/rwbv-mz6z.json?commission_number_uid=01 P4603811
+
+trad_notary user test#4-post notaryauth route refactor on 5-15-24v3(second session):
+--> not a fringe case
+rsharif@aol.com
+abc123
+RASHAD SHARIF
+01SH6313188
+Rockland
+Traditional
+01/20/2023
+01/20/2027
+
+if you go to the data.ny.gov website and search for records that contain a sapce " " using the 'contains' query term you get 236 records that are 11 characters long but only contain 10 characters and a space in the middle of the textstring. Querying these records is problematic from the API perspective and even copying and pasting the commission holder's name in the URL doesn't always work.
+
+e.g. these five GET requests return an empty `[ ]`
+
+`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=GRACE PRUNO`
+
+`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=JOHN A OWENS JR`
+
+`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=CAROL A BLAKE`
+
+`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=KAREN M D'ANGELO`
+
+`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=MICHELE A GREEN HOSANG`
+
+while `https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=COSTA-TRAHAN CYNTHIA A` returns:
+
+```
+[
+  {
+    "commission_holder_name": "COSTA-TRAHAN CYNTHIA A",
+    "commission_number_uid": "02A 5074644",
+    "business_address_1_if_available": "COSTA & ASSOCIATES",
+    "business_address_2_if_available": "56 N. BROADWAY",
+    "business_city_if_available": "NYACK",
+    "business_state_if_available": "NY",
+    "business_zip_if_available": "10960",
+    "commissioned_county": "Rockland",
+    "commission_type_traditional_or_electronic": "Traditional",
+    "term_issue_date": "2023-05-17T00:00:00.000",
+    "term_expiration_date": "2027-05-17T00:00:00.000",
+    "georeference": {
+      "type": "Point",
+      "coordinates": [
+        -73.9249517,
+        41.0917555
+      ]
+    }
+  }
+]
+```
+
 ## my public credentials
+
 ARTHUR John HAUSER
 01HA0018990
 Kings

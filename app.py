@@ -11,7 +11,7 @@ from flask_security import (
 from flask_login import LoginManager, login_manager, login_user
 import requests
 from datetime import datetime
-
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -130,14 +130,29 @@ def notaryauth():
         commission_start_date_str = commission_start_date.strftime("%Y-%m-%d")
         commission_expiration_date_str = commission_expiration_date.strftime("%Y-%m-%d")
 
+        # Define a mapping between the radio button values and the API values
+        role_mapping = {
+            3: "Traditional",
+            4: "Electronic",
+        }
+
+        # Get the role value from the form
+        role_value = int(session["role_id"])
+
+        # Get the corresponding string value for the API
+        commission_type = role_mapping.get(role_value)
+
+        # URL encode the commission_id
+        commission_id_encoded = urllib.parse.quote_plus(commission_id)
+
         # The function then sends a GET request to an API endpoint with the commission_id as a parameter.
         response = requests.get(
             "https://data.ny.gov/resource/rwbv-mz6z.json",
             params={
                 "commission_holder_name": full_name,
-                "commission_number_uid": commission_id,
+                "commission_number_uid": commission_id_encoded,
                 "commissioned_county": commissioned_county,
-                # "commission_type_traditional_or_electronic": commission_type,
+                "commission_type_traditional_or_electronic": commission_type,
                 "term_issue_date": commission_start_date_str,
                 "term_expiration_date": commission_expiration_date_str,
             },
@@ -249,16 +264,10 @@ def mydetails():
     return render_template("mydetails.html")
 
 
-@app.route("/mytradnotarylog")
+@app.route("/notarylogbook")
 @roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
-def mytradnotarylog():
-    return render_template("mytradnotarylog.html")
-
-
-@app.route("/myenotarylog")
-@roles_accepted("Admin", "Electronic Notary")
-def myenotarylog():
-    return render_template("myenotarylog.html")
+def notarylogbook():
+    return render_template("mynotarylogbook.html")
 
 
 @app.route("/myesignature")
