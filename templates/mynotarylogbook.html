@@ -1,48 +1,124 @@
-<!-- myenotarylog.html -->
+{% extends 'base.html' %}
+<!-- spacer  -->
+{% block base_head_content %}
+<link
+  href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
+  rel="stylesheet"
+/>
+{% endblock %}
+<!-- spacer  -->
+{% block main_content %}
 
-<h3>E-Notary Log</h3>
-<table>
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Approximate Time</th>
-            <th>Type of Notarial Act</th>
-            <th>Name of the Individual</th>
-            <th>Address of the Individual</th>
-            <th>Number of Notarial Service(s)</th>
-            <th>Type of Notarial Service(s)</th>
-            <th>Type of Credential Used</th>
-            <th>Verification Procedure Used</th>
-            <th>communication technology used</th>
-            <th>certification authority and verification providers used</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- {% for record in records %} -->
-        <tr>
-            <td>5/12/24</td>
-            <td>6:25PM</td>
-            <td>jurat</td>
-            <td>name</td>
-            <td>address</td>
-            <td>1</td>
-            <td>notarization</td>
-            <td>driver's license</td>
-            <td>visual confirmation</td>
-            <td>Zoom or Google Meet</td>
-            <td>ID.ME or Stripe Identity</td>
-            <!-- 
-            <td>{{record.date}}</td>
-            <td>{{record.time}}</td>
-            <td>{{record.act_type}}</td>
-            <td>{{record.individual_name}}</td>
-            <td>{{record.individual_address}}</td>
-            <td>{{record.service_info_num}}</td>
-            <td>{{record.service_info_type}}</td>
-            <td>{{record.credential_type}}</td>
-            <td>{{record.verification_procedure}}</td> 
-        -->
-        </tr>
-        <!-- {% endfor %} -->
-    </tbody>
-</table>
+<h1>Notary Logbook - Editable Table</h1>
+<hr />
+<div id="table"></div>
+{% endblock %}
+<!-- spacer  -->
+{% block base_end_of_body_scripts %}
+<script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+<script>
+  const tableDiv = document.getElementById("table");
+
+  const updateUrl = (prev, query) => {
+    return (
+      prev +
+      (prev.indexOf("?") >= 0 ? "&" : "?") +
+      new URLSearchParams(query).toString()
+    );
+  };
+
+  const editableCellAttributes = (data, row, col) => {
+    if (row) {
+      return { contentEditable: "true", "data-element-id": row.cells[0].data };
+    } else {
+      return {};
+    }
+  };
+
+  new gridjs.Grid({
+    columns: [
+      { id: "id", hidden: true },
+      { id: "name", name: "Name", attributes: editableCellAttributes },
+      { id: "age", name: "Age" },
+      {
+        id: "address",
+        name: "Address",
+        sort: false,
+        attributes: editableCellAttributes,
+      },
+      { id: "phone", name: "Phone Number", sort: false },
+      { id: "email", name: "Email" },
+    ],
+    server: {
+      url: "/api/data",
+      then: (results) => results.data,
+      total: (results) => results.total,
+    },
+    search: {
+      enabled: true,
+      server: {
+        url: (prev, search) => {
+          return updateUrl(prev, { search });
+        },
+      },
+    },
+    sort: {
+      enabled: true,
+      multiColumn: true,
+      server: {
+        url: (prev, columns) => {
+          const columnIds = ["id", "name", "age", "address", "phone", "email"];
+          const sort = columns.map(
+            (col) => (col.direction === 1 ? "+" : "-") + columnIds[col.index]
+          );
+          return updateUrl(prev, { sort });
+        },
+      },
+    },
+    pagination: {
+      enabled: true,
+      server: {
+        url: (prev, page, limit) => {
+          return updateUrl(prev, { start: page * limit, length: limit });
+        },
+      },
+    },
+  }).render(tableDiv);
+
+  let savedValue;
+
+  tableDiv.addEventListener("focusin", (ev) => {
+    if (ev.target.tagName === "TD") {
+      savedValue = ev.target.textContent;
+    }
+  });
+
+  tableDiv.addEventListener("focusout", (ev) => {
+    if (ev.target.tagName === "TD") {
+      if (savedValue !== ev.target.textContent) {
+        fetch("/api/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: ev.target.dataset.elementId,
+            [ev.target.dataset.columnId]: ev.target.textContent,
+          }),
+        });
+      }
+      savedValue = undefined;
+    }
+  });
+
+  tableDiv.addEventListener("keydown", (ev) => {
+    if (ev.target.tagName === "TD") {
+      if (ev.key === "Escape") {
+        ev.target.textContent = savedValue;
+        ev.target.blur();
+      } else if (ev.key === "Enter") {
+        ev.preventDefault();
+        ev.target.blur();
+      }
+    }
+  });
+</script>
+{% endblock %}

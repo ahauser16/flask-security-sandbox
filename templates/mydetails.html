@@ -1,5 +1,6 @@
 <!-- mydetails.html -->
 
+{% extends 'base.html' %} {% block main_content %}
 <h3>My Details</h3>
 <br />
 <b>My email:</b>
@@ -29,3 +30,4 @@
 <b>Commission Expiration Date:</b>
 <p>{{current_user.notary_credentials.term_expiration_date }}</p>
 <br />
+{% endblock %}

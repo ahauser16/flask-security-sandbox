@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>eNotaryNYServices</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='header.css') }}"
+    />
+    {% block base_head_content %}{% endblock %}
+  </head>
+  <body>
+    {% include 'header.html' %}
+    <main>{% block main_content %}{% endblock %}</main>
+    {% include 'footer.html' %}
+
+    <script>
+      var navToggle = document.getElementById("nav-toggle");
+      var nav = document.getElementById("nav");
+
+      navToggle.onclick = function () {
+        if (navToggle.classList.contains("nav-toggle--open")) {
+          navToggle.classList.remove("nav-toggle--open");
+        } else {
+          navToggle.classList.add("nav-toggle--open");
+        }
+
+        if (nav.classList.contains("nav--visible")) {
+          nav.classList.remove("nav--visible");
+        } else {
+          nav.classList.add("nav--visible");
+        }
+      };
+    </script>
+    <script>
+      document
+        .getElementById("signup-form")
+        .addEventListener("submit", function () {
+          var option = document.querySelector(
+            'input[name="options"]:checked'
+          ).value;
+          if (option == 3 || option == 4) {
+            this.action = "/notaryauth";
+          }
+        });
+    </script>
+    {% block base_end_of_body_scripts %}{% endblock %}
+  </body>
+</html>
