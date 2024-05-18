@@ -8,7 +8,8 @@ from flask_security import (
     SQLAlchemyUserDatastore,
     roles_accepted,
 )
-from flask_login import LoginManager, login_manager, login_user
+from flask_login import LoginManager, login_manager, login_user, current_user
+from flask_migrate import Migrate
 import requests
 from datetime import datetime
 import urllib.parse
@@ -24,8 +25,11 @@ app.config["SECURITY_SEND_REGISTER_EMAIL"] = False
 db = SQLAlchemy()
 db.init_app(app)
 
+migrate = Migrate(app, db)  # Initialize Migrate after db
+
 app.app_context().push()
 
+# role_users must be defined before the User and Role classes
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
@@ -40,12 +44,27 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False, server_default="")
     active = db.Column(db.Boolean())
     roles = db.relationship("Role", secondary=roles_users, backref="roled")
+    notary_credentials = db.relationship(
+        "NotaryCredentials", backref="user_notary_credentials", uselist=False
+    )
 
 
 class Role(db.Model, RoleMixin):
     __tablename__ = "role"
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
+
+
+class NotaryCredentials(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    commission_holder_name = db.Column(db.String(100))
+    commission_number_uid = db.Column(db.String(100))
+    commissioned_county = db.Column(db.String(100))
+    commission_type_traditional_or_electronic = db.Column(db.String(100))
+    term_issue_date = db.Column(db.DateTime)
+    term_expiration_date = db.Column(db.DateTime)
+    user = db.relationship("User", backref="notary_credentials_backref", uselist=False)
 
 
 user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
@@ -62,52 +81,30 @@ def index():
     return render_template("index.html")
 
 
-# This line sets up a route for the `/signup` URL. It accepts both GET and POST requests.
 @app.route("/signup", methods=["GET", "POST"])
-# This line defines the function that will be executed when the /signup route is accessed.
 def signup():
-    # This line initializes a variable `msg` to an empty string. This variable is used to store any message that needs to be displayed to the user.
     msg = ""
-    # This line checks if the request method is `POST`, which means the user has submitted the signup form.
     if request.method == "POST":
-        # This line queries the database to check if a user with the submitted email already exists.
         user = User.query.filter_by(email=request.form["email"]).first()
-        # This line checks if a user was found in the previous step.
         if user:
-            # If a user was found, this line sets the `msg` variable to "User already exist".
             msg = "User already exist"
-            # This line renders the signup form again, passing the `msg` variable to the template.
             return render_template("signup.html", msg=msg)
 
-        # This line stores the submitted email in the session.
         session["email"] = request.form["email"]
-        # This line stores the submitted password in the session.
         session["password"] = request.form["password"]
-        # This line stores the submitted role ID in the session.
         session["role_id"] = request.form["options"]
 
-        # This line queries the database to get the role object corresponding to the submitted role ID.
         role = Role.query.filter_by(id=session["role_id"]).first()
-        # This line checks if the role name is either "Traditional Notary" or "Electronic Notary".
         if role.name in ["Traditional Notary", "Electronic Notary"]:
-            # If the role name is either "Traditional Notary" or "Electronic Notary", this line redirects the user to the `/notaryauth` route.
             return redirect(url_for("notaryauth"))
         else:
-            # If the role name is not either "Traditional Notary" or "Electronic Notary", this line creates a new user object with the submitted email and password, and sets the active attribute to 1.
             user = User(email=session["email"], active=1, password=session["password"])
-            # This line adds the role to the user's roles.
             user.roles.append(role)
-            # This line adds the user object to the session.
             db.session.add(user)
-            # This line commits the session, which saves the user to the database.
             db.session.commit()
-            # This line logs the user in.
             login_user(user)
-            # This line redirects the user to the `/index` route.
             return redirect(url_for("index"))
-    # This line starts the else block, which is executed if the request method is not POST.
     else:
-        # This line renders the signup form, passing the msg variable to the template.
         return render_template("signup.html", msg=msg)
 
 
@@ -124,7 +121,6 @@ def notaryauth():
         commission_expiration_date = datetime.strptime(
             request.form["commission_expiration_date"], "%Y-%m-%d"
         )
-        # commission_type = request.form["commission_type_traditional_or_electronic"]
 
         # Convert dates back to string format
         commission_start_date_str = commission_start_date.strftime("%Y-%m-%d")
@@ -158,7 +154,7 @@ def notaryauth():
             },
         )
         data = response.json()
-        print(data)
+        print("Data from API: ", data)
 
         # If the API response is empty, not a list, or has no elements, the function returns an error message.
         if not data or not isinstance(data, list) or len(data) == 0:
@@ -166,6 +162,14 @@ def notaryauth():
                 jsonify({"error": "No matching data found in the API's database"}),
                 400,
             )
+
+        print(
+            "Data to map to: ",
+            full_name,
+            commissioned_county,
+            commission_start_date,
+            commission_expiration_date,
+        )
 
         # The function then creates a SQLAlchemyUserDatastore instance, which is used to interact with the database.
         user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -190,6 +194,19 @@ def notaryauth():
             )
 
             user_datastore.add_role_to_user(user, role)
+
+            # Create a new NotaryCredentials instance and associate it with the user
+            notary_credentials = NotaryCredentials(
+                user_id=user.id,
+                commission_holder_name=full_name,
+                commission_number_uid=commission_id,
+                commissioned_county=commissioned_county,
+                commission_type_traditional_or_electronic=commission_type,
+                term_issue_date=commission_start_date,
+                term_expiration_date=commission_expiration_date,
+            )
+            db.session.add(notary_credentials)
+
             db.session.commit()
             login_user(user)
             return redirect(url_for("index"))

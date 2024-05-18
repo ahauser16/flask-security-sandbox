@@ -75,27 +75,11 @@
                 >My E-Signature</a
               >
             </li>
-            <li class="nav__item">
-              <a
-                href="/notarylogbook"
-                class="nav__link"
-                title="Access Required: Admin, Traditional Notary, Electronic Notary"
-                >My Logbook</a
-              >
-            </li>
-            <li class="nav__item">
-              <a
-                href="/myesignature"
-                class="nav__link"
-                title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
-                >My E-Signature</a
-              >
-            </li>
             {% if 'Admin' in current_user.roles or 'Traditional Notary' in
             current_user.roles or 'Electronic Notary' in current_user.roles%}
             <li class="nav__item">
               <a
-                href="/mytradnotarylog"
+                href="/notarylogbook"
                 class="nav__link"
                 title="Access Required: Admin, Traditional Notary, Electronic Notary"
                 >My Logbook</a

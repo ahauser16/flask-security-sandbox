@@ -3,10 +3,16 @@ https://www.geeksforgeeks.org/flask-role-based-access-control/
 
 ## reminders on how to work on this project:
 
-### ToDos: 
+### ToDos:
 
-1.  Add "Forgot Username" and "Forgot Password" feature using flask-security & flask-mailman
-
+1.  currently working on--> add a notary logbook feature with an editable table for Traditional Notary and Electronic Notary users.
+    1.  COMPLETE-->This will require updating the `User` model for registered users who are either Traditional Notaries or Electronic Notaries to include their commission details: `commission_holder_name`, `commission_number_uid`, `commissioned_county`, `commission_type_traditional_or_electronic`, `term_issue_date` and `term_expiration_date`.
+    2.  COMPLETE-->UPDATE PSQL `User` MODEL: once a user registers as a notary and successfully authenticates using NYSDOS notary credentials those credentials need to be added to the user's profile in the database.
+    3.  Add editable_logbook.py and editable_logbook.html to the front end.
+    4.  create notary_logbook models for database and join it with the `User` model.
+    5.  Add CRUD operations for logbook
+    6.  Add logic that checks if a user has already registered with the notary credentials.
+2.  Add "Forgot Username" and "Forgot Password" feature using flask-security & flask-mailman
 
 ### running the application:
 
@@ -38,7 +44,7 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
 3. Helpful "general" `psql` commands:
 
 - `\l` : list all your databases.
-- `\c database_name` : Connect to a specific database.
+- `\c nysdos_notaries_test` : Connect to a specific database.
 - `\dt` : List all tables in the current database.
 - `\d` : table_name: Show the structure of a specific table.
 - `\du` : List all users.
@@ -214,6 +220,17 @@ while `https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=COSTA-
 
 ## my public credentials
 
+use this fake default to log in as "arthur"
+NB--> 5/17/24 registration works fine
+
+therealarturo@gmail.com
+abc123
+
+wtf@gmail.com
+abc123
+
+whitesnake@gmail.com
+abc123
 ARTHUR John HAUSER
 01HA0018990
 Kings

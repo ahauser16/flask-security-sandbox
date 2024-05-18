@@ -15,5 +15,4 @@ def create_roles():
     db.session.commit()
     print("Roles created successfully!")
 
-# Function calling will create 4 roles as planned!
 create_roles()
