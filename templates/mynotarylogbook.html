@@ -5,13 +5,86 @@
   href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
   rel="stylesheet"
 />
+<style>
+  ol {
+    list-style-type: none;
+    counter-reset: item;
+  }
+
+  ol.level-one > li {
+    counter-increment: item;
+  }
+
+  ol.level-one > li::before {
+    content: "(" counter(item, lower-alpha) ") ";
+  }
+
+  ol.level-two > li {
+    counter-increment: item;
+  }
+
+  ol.level-two > li::before {
+    content: "(" counter(item, decimal) ") ";
+  }
+</style>
 {% endblock %}
 <!-- spacer  -->
 {% block main_content %}
 
-<h1>Notary Logbook - Editable Table</h1>
+<h2>Notary Logbook - Editable Table</h2>
+<button onclick="location.href='/addnotarylogentry'">Add Entry</button>
 <hr />
 <div id="table"></div>
+<hr />
+<h3>§182.9 Recordkeeping and Reporting</h3>
+<ol class="level-one">
+  <li>
+    In addition to any required video and audio conference recording, all
+    notaries public must maintain records sufficient to document compliance with
+    the requirements of sections 130 and 135-c of the Executive Law and the
+    duties and responsibilities of a notary public and/or electronic notary
+    public as outlined in this Part. Record storage may be made through a third
+    party if safeguarded through a password or other secure means of
+    authentication or access. Such records shall be made contemporaneously with
+    the performance of the notarial act and must include:
+
+    <ol class="level-two">
+      <li>the date, approximate time, and type of notarial acts performed;</li>
+      <li>
+        the name and address of any individuals for whom a notarial act was
+        performed;
+      </li>
+      <li>the number and type of notarial services provided;</li>
+      <li>
+        the type of credential used to identify the principal, including, for
+        verification made in accordance with paragraphs (4) or (5) of
+        subdivision (b) of section 182.5, the names of the witnesses and, if
+        applicable, the type of credential used;
+      </li>
+      <li>
+        the verification procedures used for any personal appearance before the
+        notary public; and
+      </li>
+      <li>
+        for electronic notarial acts, identification of the communication
+        technology and, if not included as part of the communication technology
+        used by the electronic notary, the certification authority and
+        verification providers used.
+      </li>
+    </ol>
+  </li>
+  <li>
+    Any records maintained by a notary public pursuant to this Part must be
+    retained by the notary public for at least ten years.
+  </li>
+  <li>
+    Any records retained by a notary public pursuant to this Part must be
+    capable of being produced to the secretary of state and others as necessary
+    in relation to the performance of the notary public’s obligations pursuant
+    to the Executive Law and this Part.
+  </li>
+</ol>
+
 {% endblock %}
 <!-- spacer  -->
 {% block base_end_of_body_scripts %}
@@ -38,19 +111,105 @@
   new gridjs.Grid({
     columns: [
       { id: "id", hidden: true },
-      { id: "name", name: "Name", attributes: editableCellAttributes },
-      { id: "age", name: "Age" },
       {
-        id: "address",
-        name: "Address",
-        sort: false,
+        id: "date",
+        name: "Date",
+        title: "Date",
         attributes: editableCellAttributes,
       },
-      { id: "phone", name: "Phone Number", sort: false },
-      { id: "email", name: "Email" },
+      {
+        id: "time",
+        name: "Time",
+        title: "Time",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "act_type",
+        name: "Notarial Act Type",
+        title: "Type of Notarial Act",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "other_act_type_input",
+        name: "Other Act Type Input",
+        title: "Other Act Type Input",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_name",
+        name: "Principal Name",
+        title: "Principal Name",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_addressLine1",
+        name: "Principal Address Line 1",
+        title: "Principal Address Line 1",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_addressLine2",
+        name: "Principal Address Line 2",
+        title: "Principal Address Line 2",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_city",
+        name: "Principal City",
+        title: "Principal City",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_state",
+        name: "Principal State",
+        title: "Principal State",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "principal_zipCode",
+        name: "Principal Zip Code",
+        title: "Principal Zip Code",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "service_number",
+        name: "Service Number",
+        title: "Number of Notarial Services",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "service_type",
+        name: "Service Type",
+        title: "Type of Notarial Services",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "credential_type",
+        name: "Credential Type",
+        title: "Type of Credential",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "communication_tech",
+        name: "Communication Tech",
+        title: "Communication Technology",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "certification_authority",
+        name: "Certification Authority",
+        title: "Certification Authority",
+        attributes: editableCellAttributes,
+      },
+      {
+        id: "verification_provider",
+        name: "Verification Provider",
+        title: "Verification Provider",
+        attributes: editableCellAttributes,
+      },
     ],
     server: {
-      url: "/api/data",
+      url: "/api/notarial_act_data",
       then: (results) => results.data,
       total: (results) => results.total,
     },
@@ -67,7 +226,25 @@
       multiColumn: true,
       server: {
         url: (prev, columns) => {
-          const columnIds = ["id", "name", "age", "address", "phone", "email"];
+          const columnIds = [
+            "id",
+            "date",
+            "time",
+            "act_type",
+            "other_act_type_input",
+            "principal_name",
+            "principal_addressLine1",
+            "principal_addressLine2",
+            "principal_city",
+            "principal_state",
+            "principal_zipCode",
+            "service_number",
+            "service_type",
+            "credential_type",
+            "communication_tech",
+            "certification_authority",
+            "verification_provider",
+          ];
           const sort = columns.map(
             (col) => (col.direction === 1 ? "+" : "-") + columnIds[col.index]
           );
@@ -83,6 +260,23 @@
         },
       },
     },
+    style: {
+      table: {
+        border: "3px solid #ccc",
+      },
+      th: {
+        "background-color": "rgba(0, 0, 0, 0.1)",
+        color: "#000",
+        "border-bottom": "3px solid #ccc",
+        "text-align": "center",
+        "white-space": "normal",
+        "word-wrap": "break-word",
+        "font-size": ".75em",
+      },
+      td: {
+        "text-align": "center",
+      },
+    },
   }).render(tableDiv);
 
   let savedValue;
@@ -96,7 +290,7 @@
   tableDiv.addEventListener("focusout", (ev) => {
     if (ev.target.tagName === "TD") {
       if (savedValue !== ev.target.textContent) {
-        fetch("/api/data", {
+        fetch("/api/notarial_act_data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

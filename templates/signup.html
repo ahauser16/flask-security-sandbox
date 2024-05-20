@@ -1,5 +1,7 @@
 <!-- signup.html -->
-
+{% extends 'base.html' %} 
+<!-- spacer -->
+{% block main_content %}
 <h2>Sign up</h2>
 
 <!-- Show only if user is logged in -->
@@ -34,3 +36,4 @@
 </form>
 <!-- End the if block -->
 {% endif %}
+{% endblock %}

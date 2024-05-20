@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+<!-- spacer  -->
+{% block base_head_content %}<style>
+  h2 {
+    display: inline-block;
+  }
+
+  ol {
+    list-style-type: none;
+    counter-reset: item;
+  }
+
+  ol.level-one > li {
+    counter-increment: item;
+  }
+
+  ol.level-one > li::before {
+    content: "(" counter(item, lower-alpha) ") ";
+  }
+
+  ol.level-two > li {
+    counter-increment: item;
+  }
+
+  ol.level-two > li::before {
+    content: "(" counter(item, decimal) ") ";
+  }
+</style>
+{% endblock %}
+<!-- spacer  -->
+{% block main_content %}
+<h2>Notary Logbook - Add Notarial Act</h2>
+<form action="/addnotarylogentry" method="post">
+  <label for="date">Date:</label><br />
+  <input type="date" id="date" name="date" /><br />
+  <label for="time">Time:</label><br />
+  <input type="time" id="time" name="time" /><br />
+
+  <!-- <label for="act_type">Notarial Act Type:</label><br />
+  <input type="text" id="act_type" name="act_type" /><br /> -->
+  <label for="act_type">Notarial Act Type:</label><br />
+  <select id="act_type" name="act_type">
+    <option value="administering_oath">administering oath</option>
+    <option value="administering_affirmation">administering affirmation</option>
+    <option value="taking_an_affidavit">taking an affidavit</option>
+    <option value="taking_a_deposition">taking a deposition</option>
+    <option value="receiving_acknowledgments">receiving acknowledgments</option>
+    <option value="certifying_acknowledgments">
+      certifying acknowledgments
+    </option>
+    <option value="receiving_and_certifying_acknowledgments">
+      receiving and certifying acknowledgments
+    </option>
+    <option value="receiving_proof_written_instrument">
+      receiving proof of written instrument
+    </option>
+    <option value="certifying_proof_written_instrument">
+      certifying proof of written instrument
+    </option>
+    <option
+      value="demanding_acceptance_and_or_payment_foreign_and_inland_bills_of_exchange"
+    >
+      demanding acceptance and/or payment of foreign and inland bills of
+      exchange
+    </option>
+    <option value="demanding_acceptance_and_or_payment_of_promissory_notes">
+      demanding acceptance and/or payment of promissory notes
+    </option>
+    <option
+      value="demanding_acceptance_and_or_payment_of_obligations_in_writing"
+    >
+      demanding acceptance and/or payment of obligations in writing
+    </option>
+    <option
+      value="protesting_nonacceptance_or_non_payment_of_payment_of_foreign_and_inland_bills_of_exchange"
+    >
+      protesting non-acceptance or non-payment of payment of foreign and inland
+      bills of exchange
+    </option>
+    <option
+      value="protesting_nonacceptance_or_nonpayment_of_payment_of_promissory_notes"
+    >
+      protesting non-acceptance or non-payment of payment of promissory notes
+    </option>
+    <option
+      value="protesting_nonacceptance_or_nonpayment_of_obligations_in_writing"
+    >
+      protesting non-acceptance or non-payment of obligations in writing
+    </option>
+    <option value="preparation_certificate_authenticity">
+      preparation of a certificate of authenticity
+    </option>
+    <option value="other">other</option></select
+  ><br />
+  <div id="other_act_type" style="display: none">
+    <label for="other_act_type_input">Specify Other Act Type:</label><br />
+    <input
+      type="text"
+      id="other_act_type_input"
+      name="other_act_type_input"
+    /><br />
+  </div>
+
+  <label for="principal_name">Principal Name:</label><br />
+  <input
+    type="text"
+    id="principal_name"
+    name="principal_name"
+    value="John Doe"
+  /><br />
+
+  <!-- <label for="individual_address">Individual Address:</label><br />
+  <input type="text" id="individual_address" name="individual_address" /><br /> -->
+  <label for="principal_addressLine1">Address Line 1:</label>
+  <input
+    type="text"
+    id="principal_addressLine1"
+    name="principal_addressLine1"
+    value="123 Main St."
+  />
+
+  <label for="principal_addressLine2">Address Line 2:</label>
+  <input
+    type="text"
+    id="principal_addressLine2"
+    name="principal_addressLine2"
+    value="Apt. 1A"
+  />
+
+  <label for="principal_city">City:</label>
+  <input
+    type="text"
+    id="principal_city"
+    name="principal_city"
+    value="Central City"
+  />
+
+  <label for="principal_state">State:</label>
+  <input type="text" id="principal_state" name="principal_state" value="ND" />
+
+  <label for="principal_zipCode">Zip Code:</label>
+  <input
+    type="text"
+    id="principal_zipCode"
+    name="principal_zipCode"
+    value="12345"
+  />
+
+  <label for="service_number">Number of Services:</label><br />
+  <input
+    type="number"
+    id="service_number"
+    name="service_number"
+    value="1"
+  /><br />
+
+  <label for="service_type">Service Type:</label><br />
+  <input
+    type="text"
+    id="service_type"
+    name="service_type"
+    value="the acknowledgment of a signature on a document. This involves the notary verifying the identity of the signer, ensuring that the signer understands the document, and that the signature is provided willingly."
+  /><br />
+  <label for="credential_type">Credential Type:</label><br />
+  <input
+    type="text"
+    id="credential_type"
+    name="credential_type"
+    value="Driver's License, Passport, etc."
+  /><br />
+  <label for="communication_tech">Communication Tech:</label><br />
+  <input
+    type="text"
+    id="communication_tech"
+    name="communication_tech"
+    value="Google Meet, Zoom, etc."
+  /><br />
+  <label for="certification_authority">Certification Authority:</label><br />
+  <input
+    type="text"
+    id="certification_authority"
+    name="certification_authority"
+    value="ID.ME, Stripe, etc."
+  /><br />
+  <label for="verification_provider">Verification Provider:</label><br />
+  <input
+    type="text"
+    id="verification_provider"
+    name="verification_provider"
+    value="ID.ME, Stripe, etc."
+  /><br />
+  <input type="submit" value="Submit" />
+</form>
+<h4>Remember!</h4>
+<h5>§182.2 Definitions</h5>
+<ol class="level-two">
+  (c) “Notarial act” means any official act that a notary public is authorized
+  to perform by law, including, but not limited to:
+  <li>administering oaths and affirmations;</li>
+  <li>taking affidavits and depositions;</li>
+  <li>
+    receiving and certifying acknowledgments or proof of such written
+    instruments as deeds, mortgages, powers of attorney and other instruments in
+    writing;
+  </li>
+  <li>
+    demanding acceptance or payment of foreign and inland bills of exchange,
+    promissory notes and obligations in writing, and protesting the same for
+    non-acceptance or non-payment, as the case may require;
+  </li>
+  <li>
+    preparation of a certificate of authenticity in accordance with paragraph
+    (d) of subdivision six of section 135-c of the Executive Law or
+  </li>
+  <li>an electronic notarial act.</li>
+</ol>
+{% endblock %}
+<!-- spacer  -->
+{% block base_end_of_body_scripts %}
+<script>
+  document.getElementById("act_type").addEventListener("change", function () {
+    if (this.value === "other") {
+      document.getElementById("other_act_type").style.display = "block";
+    } else {
+      document.getElementById("other_act_type").style.display = "none";
+    }
+  });
+</script>
+<script>
+  window.onload = function () {
+    var date = new Date();
+
+    var day = ("0" + date.getDate()).slice(-2);
+    var month = ("0" + (date.getMonth() + 1)).slice(-2);
+    var today = date.getFullYear() + "-" + month + "-" + day;
+    document.getElementById("date").value = today;
+
+    var hour = ("0" + date.getHours()).slice(-2);
+    var minute = ("0" + date.getMinutes()).slice(-2);
+    var currentTime = hour + ":" + minute;
+    document.getElementById("time").value = currentTime;
+  };
+</script>
+{% endblock %}
