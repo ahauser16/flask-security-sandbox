@@ -17,7 +17,42 @@
   </head>
   <body>
     {% include 'header.html' %}
-    <main class="container">{% block main_content %}{% endblock %}</main>
+    <main class="container">
+      {% block main_content %}{% endblock %}
+      <section>
+        <h2>Welcome to Notarious</h2>
+        <p>
+          This is a simple web application that demonstrates how to use Flask
+          and Flask-Security to create a web application with user
+          authentication and authorization.
+        </p>
+        <ul>
+          The application has role based authentication and permissions for the
+          following roles (hover over each link to view permissions):
+          <li>
+            <a
+              href="/principals"
+              title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+              >Principals List</a
+            >
+          </li>
+          <li>
+            <a
+              href="/trad_notaries"
+              title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+              >Traditional Notaries List</a
+            >
+          </li>
+          <li>
+            <a
+              href="/e_notaries"
+              title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+              >Electronic Notaries List</a
+            >
+          </li>
+        </ul>
+      </section>
+    </main>
     {% include 'footer.html' %}
 
     <script>
@@ -37,18 +72,6 @@
           nav.classList.add("nav--visible");
         }
       };
-    </script>
-    <script>
-      document
-        .getElementById("signup-form")
-        .addEventListener("submit", function () {
-          var option = document.querySelector(
-            'input[name="options"]:checked'
-          ).value;
-          if (option == 3 || option == 4) {
-            this.action = "/notaryauth";
-          }
-        });
     </script>
     {% block base_end_of_body_scripts %}{% endblock %}
   </body>

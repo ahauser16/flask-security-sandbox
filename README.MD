@@ -220,16 +220,13 @@ while `https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=COSTA-
 
 ## my public credentials
 
-use this fake default to log in as "arthur"
+use this fake default to log in as "a Principal user"
 NB--> 5/17/24 registration works fine
 
-therealarturo@gmail.com
-abc123
-
-wtf@gmail.com
-abc123
-
 whitesnake@gmail.com
+abc123
+
+croc@gmail.com
 abc123
 ARTHUR John HAUSER
 01HA0018990
@@ -237,3 +234,212 @@ Kings
 Electronic
 12/21/2023
 12/21/2027
+
+## Debugging notes from issue with `Flask` `session` and `Flask_Security`'s `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`
+
+1. Flask's `session` object: This is a way to store information specific to a user from one request to the next. It's a dictionary-like object that uses a signed cookie to keep the session secure. In your code, you're using the session to store the email, password, and role_id of a user during the signup process. This data is then available to you in subsequent requests, even if they happen in a different route, like `/notaryauth`.
+
+2. `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`: These are classes provided by Flask-Security that allow you to interact with your User and Role models. They provide methods for creating users, finding users, adding roles to users, etc. In your code, you're using `SQLAlchemySessionUserDatastore` to create an instance of `user_datastore` at the start of your application. This `user_datastore` is then used in your `/signup` and `/notaryauth` routes to create users and add roles to them.
+
+The `SQLAlchemySessionUserDatastore` is designed to work with SQLAlchemy's session-based transactions, which means it doesn't commit changes to the database immediately. Instead, it waits until you call `db.session.commit()`. This can be useful if you want to make multiple changes and then commit them all at once.
+
+On the other hand, `SQLAlchemyUserDatastore` commits changes immediately. In your `/notaryauth` route, you're creating a new instance of `SQLAlchemyUserDatastore` and using it to create a user and add a role to them. These changes are committed to the database as soon as you call the methods.
+
+In terms of how these are impacting your code, the Flask `session` is allowing you to store user data across requests, while the `SQLAlchemyUserDatastore` is letting you interact with your User and Role models. However, it's unusual to use both `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore` in the same application. Typically, you would choose one or the other based on whether you want to use session-based transactions or not.
+
+### user_datastore variable explained in depth:
+
+`user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)`
+
+This code creates an instance of the `SQLAlchemySessionUserDatastore` class, which is a part of the `Flask-Security` extension. This class is a datastore adapter that allows `Flask-Security` to interact with your `User` and `Role` models using `SQLAlchemy`'s session-based transactions.
+
+Here's a breakdown of the parameters:
+
+- `db.session`: This is the `SQLAlchemy` `session` that will be used to interact with the database. `SQLAlchemy` `session`s manage all the interactions with the database and keep track of all the objects you've loaded or associated with it. They also begin and control transactions.
+
+- `User`: This is your `User` model class. It should be a `SQLAlchemy` model that includes certain fields required by `Flask-Security`, such as a password and email.
+
+- `Role`: This is your `Role` model class. It should be a `SQLAlchemy` model that represents roles that users can have.
+
+The `SQLAlchemySessionUserDatastore` instance (`user_datastore`) can then be used to create users, roles, and to add roles to users, among other things. It's designed to work with SQLAlchemy's session-based transactions, which means it **doesn't commit changes to the database immediately**. Instead, it waits until you call `db.session.commit()`. This can be useful if you want to make multiple changes and then commit them all at once.
+
+---
+
+### Flask_Security explained
+
+`security = Security(app, user_datastore)`
+
+This code initializes the `Flask-Security` extension with your `Flask` application (`app`) and the `SQLAlchemy` session-based datastore (`user_datastore`).
+
+Here's a breakdown of the parameters:
+
+- `app`: This is your `Flask` application instance. `Flask-Security` needs this to set up routes, templates, and other configuration options.
+
+- `user_datastore`: This is an instance of `SQLAlchemySessionUserDatastore` that you've created. It's used by `Flask-Security` to interact with your `User` and `Role` models.
+
+The `Security` class is a part of the `Flask-Security` extension. It provides a number of features for security-related aspects of your application, such as **user authentication**, **role management**, **password hashing**, and **session management**.
+
+By creating an instance of the `Security` class and passing in your `Flask` application and datastore, you're setting up `Flask-Security` to handle these aspects of your application. This includes setting up routes for user registration, login, logout, and more. It also includes setting up the necessary views and templates for these routes.
+
+When you initialize `Flask-Security` by creating an instance of the Security class, you're essentially telling `Flask-Security` to set up a number of routes, views, and templates that are commonly used in web applications for user management. These include routes for user registration, login, logout, and more.
+
+For example, `Flask-Security` will automatically create the following routes:
+
+- `/login`: This route is used for user login. It will display a login form to the user and handle the submission of this form to authenticate the user.
+
+- `/logout`: This route is used to log out the user. It will clear the user's session and redirect them to the login page.
+
+- `/register`: This route is used for user registration. It will display a registration form to the user and handle the submission of this form to create a new user.
+
+- `/reset`: This route is used to reset a user's password. It will display a form to the user where they can enter their email address. `Flask-Security` will then send them an email with a link to reset their password.
+
+In addition to these routes, `Flask-Security` will also set up the necessary views and templates. The views are the functions that handle the requests to these routes, and the templates are the HTML files that define what the user sees when they visit these routes.
+
+For example, for the `/login` route, `Flask-Security` will create a view function that handles the GET and POST requests to this route. It will also create a `login.html` template that defines the login form that the user sees.
+
+All of this setup is done automatically when you create an instance of the `Security` class and pass in your Flask application and datastore. This saves you the time and effort of having to create these routes, views, and templates yourself.
+
+---
+
+### old `/notaryauth` route code that was interfering with new code while refactoring to use flask-wtforms
+
+```
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    msg = ""
+    if request.method == "POST":
+        user = User.query.filter_by(email=request.form["email"]).first()
+        if user:
+            msg = "User already exist"
+            return render_template("signup.html", msg=msg)
+
+        role = Role.query.filter_by(id=request.form["options"]).first()
+        user = user_datastore.create_user(
+            email=request.form["email"], password=request.form["password"]
+        )
+        user_datastore.add_role_to_user(user, role)
+        db.session.commit()
+        login_user(user)
+
+        # Store email and password in session
+        session["email"] = request.form["email"]
+        session["password"] = request.form["password"]
+        session["role_id"] = role.id
+
+        if role.name in ["Traditional Notary", "Electronic Notary"]:
+            session["form_data"] = request.form.to_dict()
+            return redirect(url_for("signupnotary"))  # Redirect to signupnotary
+        else:
+            return redirect(url_for("index"))
+    else:
+        return render_template("signup.html", msg=msg)
+
+
+@app.route("/signupnotary", methods=["GET"])
+def signupnotary():
+    # Render the signupnotary page
+    return render_template("signupnotary.html")
+
+
+@app.route("/notaryauth", methods=["GET", "POST"])
+def notaryauth():
+    # Retrieve form data from session
+    form_data = session.get("form_data", {})
+    email = form_data.get("email")
+    password = form_data.get("password")
+    full_name = form_data.get("full_name")
+    commission_id = form_data.get("commission_id")
+    commissioned_county = form_data.get("commissioned_county")
+
+    commission_start_date_str = form_data.get("commission_start_date")
+    if commission_start_date_str is not None:
+        commission_start_date = datetime.strptime(commission_start_date_str, "%Y-%m-%d")
+    else:
+        commission_start_date = None
+
+    commission_expiration_date_str = form_data.get("commission_expiration_date")
+    if commission_expiration_date_str is not None:
+        commission_expiration_date = datetime.strptime(
+            commission_expiration_date_str, "%Y-%m-%d"
+        )
+    else:
+        commission_expiration_date = None
+
+    role_mapping = {
+        3: "Traditional",
+        4: "Electronic",
+    }
+
+    role_value = int(session.get("role_id", 0))
+    commission_type = role_mapping.get(role_value)
+
+    if commission_id is not None:
+        commission_id_encoded = urllib.parse.quote_plus(str(commission_id))
+    else:
+        commission_id_encoded = None
+
+    response = requests.get(
+        "https://data.ny.gov/resource/rwbv-mz6z.json",
+        params={
+            "commission_holder_name": full_name,
+            "commission_number_uid": commission_id_encoded,
+            "commissioned_county": commissioned_county,
+            "commission_type_traditional_or_electronic": commission_type,
+            "term_issue_date": commission_start_date_str,
+            "term_expiration_date": commission_expiration_date_str,
+        },
+    )
+    data = response.json()
+    print("Data from API: ", data)
+
+    if not data or not isinstance(data, list) or len(data) == 0:
+        return (
+            jsonify({"error": "No matching data found in the API's database"}),
+            400,
+        )
+
+    print(
+        "Data to map to: ",
+        full_name,
+        commissioned_county,
+        commission_start_date,
+        commission_expiration_date,
+    )
+
+    if (
+        data[0]["commission_holder_name"].lower() == full_name.lower()
+        and data[0]["commissioned_county"].lower() == commissioned_county.lower()
+        and datetime.strptime(data[0]["term_issue_date"], "%Y-%m-%dT%H:%M:%S.%f")
+        == commission_start_date
+        and datetime.strptime(data[0]["term_expiration_date"], "%Y-%m-%dT%H:%M:%S.%f")
+        == commission_expiration_date
+    ):
+        user = user_datastore.create_user(email=email, password=password)
+        role = user_datastore.find_role(
+            "Traditional Notary"
+            if data[0]["commission_type_traditional_or_electronic"] == "Traditional"
+            else "Electronic Notary"
+        )
+
+        user_datastore.add_role_to_user(user, role)
+
+        notary_credentials = NotaryCredentials(
+            user_id=user.id,
+            commission_holder_name=full_name,
+            commission_number_uid=commission_id,
+            commissioned_county=commissioned_county,
+            commission_type_traditional_or_electronic=commission_type,
+            term_issue_date=commission_start_date,
+            term_expiration_date=commission_expiration_date,
+        )
+        db.session.add(notary_credentials)
+
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for("index"))
+    else:
+        return render_template(
+            "signupnotary.html",
+            error="The provided data does not match the API's database",
+        )
+```

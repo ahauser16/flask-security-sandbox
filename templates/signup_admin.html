@@ -1,0 +1,36 @@
+<!-- signup_admin.html -->
+<h2>Sign Up - Administrator</h2>
+
+{% if error %}
+<p>{{ error }}</p>
+{% endif %}
+
+<form method="POST" id="notary-auth-form">
+  {{ form.hidden_tag() }}
+
+  <label>First Name </label>
+  {{ form.first_name }}<br />
+
+  <label>Last Name </label>
+  {{ form.last_name }}<br />
+
+  <label>Street Address - Line One</label>
+  {{ form.street_addr_line_one }}<br />
+
+  <label>Street Address - Line Two</label>
+  {{ form.street_addr_line_two }}<br />
+
+  <label>City</label>
+  {{ form.street_addr_city }}<br />
+
+  <label>State</label>
+  {{ form.street_addr_state }}<br />
+
+  <label>Zip Code</label>
+  {{ form.street_addr_zip_code }}<br />
+
+  <label>Admin Code</label>
+  {{ form.admin_code }}<br />
+
+  {{ form.submit }}<br /><br />
+</form>

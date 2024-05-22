@@ -1,0 +1,8 @@
+<!-- signup_final.html -->
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <p>Email: {{ session['email'] }}</p>
+  <p>Password: {{ session['password'] }}</p>
+  <!-- Add other form data here -->
+  {{ form.confirm() }}
+</form>

@@ -14,7 +14,7 @@ from flask_security import (
     RoleMixin,
     Security,
     SQLAlchemySessionUserDatastore,
-    SQLAlchemyUserDatastore,
+    utils,
     roles_accepted,
 )
 from flask_login import LoginManager, login_manager, login_user, current_user
@@ -23,12 +23,20 @@ import requests
 from datetime import datetime
 import urllib.parse
 
+from forms.signup_forms import (
+    SignupForm,
+    SignupPrincipalForm,
+    SignupAdminForm,
+    SignupNotaryForm,
+    ConfirmRegistrationForm,
+)
+
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///nysdos_notaries_test"
 app.config["SECRET_KEY"] = "count_duckula"
 app.config["SECURITY_PASSWORD_SALT"] = "count_duckula"
-app.config["SECURITY_REGISTERABLE"] = True
+app.config["SECURITY_REGISTERABLE"] = False
 app.config["SECURITY_SEND_REGISTER_EMAIL"] = False
 
 db = SQLAlchemy()
@@ -37,6 +45,29 @@ db.init_app(app)
 migrate = Migrate(app, db)  # Initialize Migrate after db
 
 app.app_context().push()
+
+# The `SQLAlchemySessionUserDatastore` instance (`user_datastore`) can then be used to create users, roles, and to add roles to users, among other things. It's designed to work with SQLAlchemy's session-based transactions, which means it **doesn't commit changes to the database immediately**. Instead, it waits until you call `db.session.commit()`. This is why you need to call `db.session.commit()` after creating a user and adding a role to it.
+
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
+    # Check if roles already exist in the database
+    if not Role.query.first():
+        roles = [
+            Role(id=1, name="Admin"),
+            Role(id=2, name="Principal"),
+            Role(id=3, name="Traditional Notary"),
+            Role(id=4, name="Electronic Notary"),
+        ]
+
+        for role in roles:
+            db.session.add(role)
+
+        db.session.commit()
+        print("Roles created successfully!")
+
 
 # role_users must be defined before the User and Role classes
 roles_users = db.Table(
@@ -62,6 +93,11 @@ class Role(db.Model, RoleMixin):
     __tablename__ = "role"
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
+
+
+# Now that User and Role are defined, we can create the user_datastore and security
+user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
+security = Security(app, user_datastore)
 
 
 class NotaryCredentials(db.Model):
@@ -120,29 +156,110 @@ class NotarialAct(db.Model):
         }
 
 
-user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
-security = Security(app, user_datastore)
-
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
-
-# @app.before_first_request
-# def reset_database():
-#     db.drop_all()
-#     db.create_all()
-
-
 @app.route("/")
 def index():
     return render_template("base.html")
 
 
-############################# new code below
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    form = SignupForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            return render_template("signup.html", form=form, msg="User already exist")
+
+        role = Role.query.filter_by(id=form.options.data).first()
+        session["email"] = form.email.data
+        session["password"] = form.password.data
+        session["role_id"] = role.id
+
+        if role.name == "Admin":
+            return redirect(url_for("signup_admin"))
+        elif role.name == "Principal":
+            return redirect(url_for("signup_principal"))
+        elif role.name in ["Traditional Notary", "Electronic Notary"]:
+            return redirect(url_for("signup_notary"))
+    return render_template("signup.html", form=form)
 
 
+@app.route("/signup_admin", methods=["GET", "POST"])
+def signup_admin():
+    form = SignupAdminForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for("confirm_registration"))
+
+    # Set the default value for the email field here, inside the route function
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+
+    return render_template("signup_admin.html", form=form)
+
+
+@app.route("/signup_principal", methods=["GET", "POST"])
+def signup_principal():
+    form = SignupPrincipalForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for("confirm_registration"))
+
+    # Set the default value for the email field here, inside the route function
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+
+    return render_template("signup_principal.html", form=form)
+
+
+@app.route("/signup_notary", methods=["GET", "POST"])
+def signup_notary():
+    form = SignupNotaryForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for("confirm_registration"))
+
+    # Set the default value for the email and password fields here, inside the route function
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+
+    return render_template("signup_notary.html", form=form)
+
+
+@app.route("/confirm_registration", methods=["GET", "POST"])
+def confirm_registration():
+    form = ConfirmRegistrationForm()
+    if form.validate_on_submit():
+        user = user_datastore.create_user(
+            email=session["email"], password=session["password"]
+        )
+        role = Role.query.filter_by(id=session["role_id"]).first()
+        user_datastore.add_role_to_user(user, role)
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for("index"))
+    else:
+        return render_template("signup_final.html", form=form, session=session)
+
+
+@app.route("/signin", methods=["GET", "POST"])
+def signin():
+    msg = ""
+    if request.method == "POST":
+        user = User.query.filter_by(email=request.form["email"]).first()
+        if user:
+            if utils.verify_and_update_password(request.form["password"], user):
+                login_user(user)
+                return redirect(url_for("index"))
+            else:
+                msg = "Wrong password"
+        else:
+            msg = "User doesn't exist"
+        return render_template("signin.html", msg=msg)
+    else:
+        return render_template("signin.html", msg=msg)
+
+
+############################ new code below
 @app.route("/api/notarial_act_data")
 def notarial_act_data():
     query = NotarialAct.query.filter_by(user_id=current_user.id)
@@ -197,167 +314,6 @@ def update_notarial_act():
 
 
 ############################ new code above
-
-
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    msg = ""
-    if request.method == "POST":
-        user = User.query.filter_by(email=request.form["email"]).first()
-        if user:
-            msg = "User already exist"
-            return render_template("signup.html", msg=msg)
-
-        session["email"] = request.form["email"]
-        session["password"] = request.form["password"]
-        session["role_id"] = request.form["options"]
-
-        role = Role.query.filter_by(id=session["role_id"]).first()
-        if role.name in ["Traditional Notary", "Electronic Notary"]:
-            return redirect(url_for("notaryauth"))
-        else:
-            user = User(email=session["email"], active=1, password=session["password"])
-            user.roles.append(role)
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-            return redirect(url_for("index"))
-    else:
-        return render_template("signup.html", msg=msg)
-
-
-@app.route("/notaryauth", methods=["GET", "POST"])
-def notaryauth():
-    # If the HTTP method is `POST`, it means the user has submitted the form on the `signupnotary.html` page. The function then retrieves the form data.
-    if request.method == "POST":
-        full_name = request.form["full_name"]
-        commission_id = request.form["commission_id"]
-        commissioned_county = request.form["commissioned_county"]
-        commission_start_date = datetime.strptime(
-            request.form["commission_start_date"], "%Y-%m-%d"
-        )
-        commission_expiration_date = datetime.strptime(
-            request.form["commission_expiration_date"], "%Y-%m-%d"
-        )
-
-        # Convert dates back to string format
-        commission_start_date_str = commission_start_date.strftime("%Y-%m-%d")
-        commission_expiration_date_str = commission_expiration_date.strftime("%Y-%m-%d")
-
-        # Define a mapping between the radio button values and the API values
-        role_mapping = {
-            3: "Traditional",
-            4: "Electronic",
-        }
-
-        # Get the role value from the form
-        role_value = int(session["role_id"])
-
-        # Get the corresponding string value for the API
-        commission_type = role_mapping.get(role_value)
-
-        # URL encode the commission_id
-        commission_id_encoded = urllib.parse.quote_plus(commission_id)
-
-        # The function then sends a GET request to an API endpoint with the commission_id as a parameter.
-        response = requests.get(
-            "https://data.ny.gov/resource/rwbv-mz6z.json",
-            params={
-                "commission_holder_name": full_name,
-                "commission_number_uid": commission_id_encoded,
-                "commissioned_county": commissioned_county,
-                "commission_type_traditional_or_electronic": commission_type,
-                "term_issue_date": commission_start_date_str,
-                "term_expiration_date": commission_expiration_date_str,
-            },
-        )
-        data = response.json()
-        print("Data from API: ", data)
-
-        # If the API response is empty, not a list, or has no elements, the function returns an error message.
-        if not data or not isinstance(data, list) or len(data) == 0:
-            return (
-                jsonify({"error": "No matching data found in the API's database"}),
-                400,
-            )
-
-        print(
-            "Data to map to: ",
-            full_name,
-            commissioned_county,
-            commission_start_date,
-            commission_expiration_date,
-        )
-
-        # The function then creates a SQLAlchemyUserDatastore instance, which is used to interact with the database.
-        user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-        # If the user data matches the data from the API, the function creates a new user with the email and password stored in the session, assigns the user a role based on the commission_type_traditional_or_electronic field, commits the changes to the database, logs the user in, and redirects them to the index page.
-        if (
-            data[0]["commission_holder_name"].lower() == full_name.lower()
-            and data[0]["commissioned_county"].lower() == commissioned_county.lower()
-            and datetime.strptime(data[0]["term_issue_date"], "%Y-%m-%dT%H:%M:%S.%f")
-            == commission_start_date
-            and datetime.strptime(
-                data[0]["term_expiration_date"], "%Y-%m-%dT%H:%M:%S.%f"
-            )
-            == commission_expiration_date
-        ):
-            user = user_datastore.create_user(
-                email=session["email"], password=session["password"]
-            )
-            role = user_datastore.find_role(
-                "Traditional Notary"
-                if data[0]["commission_type_traditional_or_electronic"] == "Traditional"
-                else "Electronic Notary"
-            )
-
-            user_datastore.add_role_to_user(user, role)
-
-            # Create a new NotaryCredentials instance and associate it with the user
-            notary_credentials = NotaryCredentials(
-                user_id=user.id,
-                commission_holder_name=full_name,
-                commission_number_uid=commission_id,
-                commissioned_county=commissioned_county,
-                commission_type_traditional_or_electronic=commission_type,
-                term_issue_date=commission_start_date,
-                term_expiration_date=commission_expiration_date,
-            )
-            db.session.add(notary_credentials)
-
-            db.session.commit()
-            login_user(user)
-            return redirect(url_for("index"))
-        else:
-            # If the user data does not match the data from the API, the function re-renders the `signupnotary.html` page with an error message.
-            return render_template(
-                "signupnotary.html",
-                error="The provided data does not match the API's database",
-            )
-
-    else:
-        # If the HTTP method is not POST (i.e., it's a GET request), the function simply renders the signupnotary.html page.
-        return render_template("signupnotary.html")
-
-
-@app.route("/signin", methods=["GET", "POST"])
-def signin():
-    msg = ""
-    if request.method == "POST":
-        user = User.query.filter_by(email=request.form["email"]).first()
-        if user:
-            if user.password == request.form["password"]:
-                login_user(user)
-                return redirect(url_for("index"))
-            else:
-                msg = "Wrong password"
-
-        else:
-            msg = "User doesn't exist"
-        return render_template("signin.html", msg=msg)
-
-    else:
-        return render_template("signin.html", msg=msg)
 
 
 @app.route("/principals")
