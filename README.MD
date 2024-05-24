@@ -28,7 +28,7 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
 
 3. Now you can run the application:
 
-`flask run`
+`flask run --debugger`
 
 ### psql and the database:
 
@@ -227,6 +227,10 @@ whitesnake@gmail.com
 abc123
 
 croc@gmail.com
+abc123
+
+
+bruno69@gmail.com
 abc123
 ARTHUR John HAUSER
 01HA0018990

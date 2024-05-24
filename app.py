@@ -20,6 +20,7 @@ from flask_security import (
 from flask_login import LoginManager, login_manager, login_user, current_user
 from flask_migrate import Migrate
 import requests
+import logging
 from datetime import datetime
 import urllib.parse
 
@@ -31,13 +32,12 @@ from forms.signup_forms import (
     ConfirmRegistrationForm,
 )
 
-app = Flask(__name__)
+# from routes.routes import index
+from config import Config  # Import the Config class
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///nysdos_notaries_test"
-app.config["SECRET_KEY"] = "count_duckula"
-app.config["SECURITY_PASSWORD_SALT"] = "count_duckula"
-app.config["SECURITY_REGISTERABLE"] = False
-app.config["SECURITY_SEND_REGISTER_EMAIL"] = False
+
+app = Flask(__name__)
+app.config.from_object(Config)  # Use the Config class for configuration
 
 db = SQLAlchemy()
 db.init_app(app)
@@ -46,7 +46,7 @@ migrate = Migrate(app, db)  # Initialize Migrate after db
 
 app.app_context().push()
 
-# The `SQLAlchemySessionUserDatastore` instance (`user_datastore`) can then be used to create users, roles, and to add roles to users, among other things. It's designed to work with SQLAlchemy's session-based transactions, which means it **doesn't commit changes to the database immediately**. Instead, it waits until you call `db.session.commit()`. This is why you need to call `db.session.commit()` after creating a user and adding a role to it.
+app.logger.setLevel(logging.INFO)
 
 
 @app.before_first_request
