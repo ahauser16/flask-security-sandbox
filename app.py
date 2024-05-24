@@ -30,9 +30,12 @@ from forms.signup_forms import (
     SignupAdminForm,
     SignupNotaryForm,
     ConfirmRegistrationForm,
+    UserDetailsForm,
 )
 
 # from routes.routes import index
+from api.notary_auth import match_notary_credentials
+
 from config import Config  # Import the Config class
 
 
@@ -46,7 +49,16 @@ migrate = Migrate(app, db)  # Initialize Migrate after db
 
 app.app_context().push()
 
-app.logger.setLevel(logging.INFO)
+# Create a logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # Set the logging level to INFO
+
+# Create a console handler
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)  # Set the handler level to INFO
+
+# Add the handler to the logger
+logger.addHandler(handler)
 
 
 @app.before_first_request
@@ -100,7 +112,21 @@ user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
 security = Security(app, user_datastore)
 
 
+class UserDetails(db.Model):
+    __tablename__ = "user_details"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    full_name = db.Column(db.String(100), nullable=False)
+    street_address_line_one = db.Column(db.String(255), nullable=False)
+    street_address_line_two = db.Column(db.String(255), nullable=True)
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(2), nullable=False)
+    zip_code = db.Column(db.String(20), nullable=False)
+    user = db.relationship("User", backref="details", uselist=False)
+
+
 class NotaryCredentials(db.Model):
+    __tablename__ = "notary_credentials"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     commission_holder_name = db.Column(db.String(100))
@@ -113,6 +139,7 @@ class NotaryCredentials(db.Model):
 
 
 class NotarialAct(db.Model):
+    __tablename__ = "notarial_act"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     date = db.Column(db.DateTime)
@@ -174,13 +201,33 @@ def signup():
         session["password"] = form.password.data
         session["role_id"] = role.id
 
-        if role.name == "Admin":
-            return redirect(url_for("signup_admin"))
-        elif role.name == "Principal":
-            return redirect(url_for("signup_principal"))
-        elif role.name in ["Traditional Notary", "Electronic Notary"]:
-            return redirect(url_for("signup_notary"))
+        return redirect(url_for("signup_user_details"))
     return render_template("signup.html", form=form)
+
+
+@app.route("/signup_user_details", methods=["GET", "POST"])
+def signup_user_details():
+    form = UserDetailsForm()
+    if form.validate_on_submit():
+        session["full_name"] = form.full_name.data
+        session["street_address_line_one"] = form.street_address_line_one.data
+        session["street_address_line_two"] = form.street_address_line_two.data
+        session["city"] = form.city.data
+        session["state"] = form.state.data
+        session["zip_code"] = form.zip_code.data
+
+        role_id = session.get("role_id")
+        if role_id in [3, 4]:  # Traditional Notary or Electronic Notary
+            return redirect(url_for("signup_notary"))
+        else:
+            return redirect(url_for("confirm_registration"))
+
+    # Prepopulate hidden fields with session data
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+    form.role_id.data = session.get("role_id")
+
+    return render_template("signup_user_details.html", form=form)
 
 
 @app.route("/signup_admin", methods=["GET", "POST"])
@@ -216,6 +263,34 @@ def signup_notary():
     form = SignupNotaryForm()
 
     if form.validate_on_submit():
+        form_data = {
+            "email": session.get("email"),
+            "password": session.get("password"),
+            "full_name": form.full_name.data,
+            "commission_id": form.commission_id.data,
+            "commissioned_county": form.commissioned_county.data,
+            "commission_start_date": form.commission_start_date.data.strftime(
+                "%Y-%m-%d"
+            ),
+            "commission_expiration_date": form.commission_expiration_date.data.strftime(
+                "%Y-%m-%d"
+            ),
+        }
+        api_data = match_notary_credentials(form_data)
+        if api_data is None:
+            flash("No matching data found in the API's database", "danger")
+            return render_template("signup_notary.html", form=form)
+
+        # Store the form data and API data in the session
+        session["full_name"] = form_data["full_name"]
+        session["commission_id"] = form_data["commission_id"]
+        session["commissioned_county"] = form_data["commissioned_county"]
+        session["commission_start_date"] = form_data["commission_start_date"]
+        session["commission_expiration_date"] = form_data["commission_expiration_date"]
+        session["commission_type_traditional_or_electronic"] = api_data[
+            "commission_type_traditional_or_electronic"
+        ]
+
         return redirect(url_for("confirm_registration"))
 
     # Set the default value for the email and password fields here, inside the route function
@@ -234,11 +309,60 @@ def confirm_registration():
         )
         role = Role.query.filter_by(id=session["role_id"]).first()
         user_datastore.add_role_to_user(user, role)
+
+        # Add user details
+        user_details = UserDetails(
+            user_id=user.id,
+            full_name=session.get("full_name"),
+            street_address_line_one=session.get("street_address_line_one"),
+            street_address_line_two=session.get("street_address_line_two"),
+            city=session.get("city"),
+            state=session.get("state"),
+            zip_code=session.get("zip_code"),
+        )
+        db.session.add(user_details)
+
+        # If user is a notary, add notary credentials
+        if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
+            notary_credentials = NotaryCredentials(
+                user_id=user.id,
+                commission_holder_name=session.get("commission_holder_name"),
+                commission_number_uid=session.get("commission_number_uid"),
+                commissioned_county=session.get("commissioned_county"),
+                commission_type_traditional_or_electronic=(
+                    "Traditional" if session["role_id"] == 3 else "Electronic"
+                ),
+                term_issue_date=session.get("commission_start_date"),
+                term_expiration_date=session.get("commission_expiration_date"),
+            )
+            db.session.add(notary_credentials)
+
         db.session.commit()
         login_user(user)
         return redirect(url_for("index"))
-    else:
-        return render_template("signup_final.html", form=form, session=session)
+
+    # Prepopulate hidden fields with session data
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+    form.role_id.data = session.get("role_id")
+    form.full_name.data = session.get("full_name")
+    form.street_address_line_one.data = session.get("street_address_line_one")
+    form.street_address_line_two.data = session.get("street_address_line_two")
+    form.city.data = session.get("city")
+    form.state.data = session.get("state")
+    form.zip_code.data = session.get("zip_code")
+
+    if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
+        form.commission_holder_name.data = session.get("commission_holder_name")
+        form.commission_number_uid.data = session.get("commission_number_uid")
+        form.commissioned_county.data = session.get("commissioned_county")
+        form.commission_start_date.data = session.get("commission_start_date")
+        form.commission_expiration_date.data = session.get("commission_expiration_date")
+        form.commission_type_traditional_or_electronic.data = (
+            "Traditional" if session["role_id"] == "3" else "Electronic"
+        )
+
+    return render_template("signup_final.html", form=form)
 
 
 @app.route("/signin", methods=["GET", "POST"])
