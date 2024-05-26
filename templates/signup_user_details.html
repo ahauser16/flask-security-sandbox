@@ -6,14 +6,27 @@
   method="POST"
   id="user-details-form"
 >
-  {{ form.hidden_tag() }} {{ form.full_name.label }} {{ form.full_name() }}<br /><br />
-  {{ form.street_address_line_one.label }} {{ form.street_address_line_one()
-  }}<br /><br />
-  {{ form.street_address_line_two.label }} {{ form.street_address_line_two()
-  }}<br /><br />
-  {{ form.city.label }} {{ form.city() }}<br /><br />
-  {{ form.state.label }} {{ form.state() }}<br /><br />
-  {{ form.zip_code.label }} {{ form.zip_code() }}<br /><br />
-  {{ form.submit() }}<br /><br />
+  {{ form.hidden_tag() }}
+  <!-- spacer -->
+  {{ form.email(value=session['email']) }}
+  <!-- spacer -->
+  {{ form.password(value=session['password']) }}
+  <!-- spacer -->
+  {{ form.role_id(value=session['role_id']) }}
+  <!-- spacer -->
+  {{ form.full_name.label }} {{ form.full_name() }}
+  <!-- spacer -->
+  {{ form.street_address_line_one.label }} {{ form.street_address_line_one() }}
+  <!-- spacer -->
+  {{ form.street_address_line_two.label }} {{ form.street_address_line_two() }}
+  <!-- spacer -->
+  {{ form.city.label }} {{ form.city() }}
+  <!-- spacer -->
+  {{ form.state.label }} {{ form.state() }}
+  <!-- spacer -->
+  {{ form.zip_code.label }} {{ form.zip_code() }}
+  <!-- spacer -->
+  {{ form.submit() }}
+  <!-- spacer -->
 </form>
 {% endblock %}

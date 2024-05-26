@@ -12,22 +12,22 @@
   id="notary-auth-form"
 >
   {{ form.hidden_tag() }}
-
-  <label>Full Name </label>
-  {{ form.full_name() }}<br /><br />
-
-  <label>Commission ID </label>
-  {{ form.commission_id() }}<br /><br />
-
-  <label>Commissioned County </label>
-  {{ form.commissioned_county() }}<br /><br />
-
-  <label>Commission Start Date </label>
-  {{ form.commission_start_date() }}<br /><br />
-
-  <label>Commission Expiration Date </label>
-  {{ form.commission_expiration_date() }}<br /><br />
-
-  {{ form.submit() }}<br /><br />
+  <!-- spacer -->
+  {{ form.full_name.label }}{{ form.full_name() }}
+  <!-- spacer -->
+  {{ form.commission_id.label }}{{ form.commission_id() }}
+  <!-- spacer -->
+  {{ form.commissioned_county.label }}{{ form.commissioned_county() }}
+  <!-- spacer -->
+  {{ form.commission_start_date.label }}
+  <!-- spacer -->
+  {{ form.commission_start_date() }}
+  <!-- spacer -->
+  {{ form.commission_expiration_date.label }}
+  <!-- spacer -->
+  {{ form.commission_expiration_date() }}
+  <!-- spacer -->
+  {{ form.submit() }}
+  <!-- spacer -->
 </form>
 {% endblock %}

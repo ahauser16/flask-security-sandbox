@@ -7,6 +7,7 @@ from flask import (
     jsonify,
     session,
     abort,
+    flash,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import (
@@ -19,6 +20,7 @@ from flask_security import (
 )
 from flask_login import LoginManager, login_manager, login_user, current_user
 from flask_migrate import Migrate
+from sqlalchemy import or_
 import requests
 import logging
 from datetime import datetime
@@ -26,12 +28,12 @@ import urllib.parse
 
 from forms.signup_forms import (
     SignupForm,
-    SignupPrincipalForm,
     SignupAdminForm,
     SignupNotaryForm,
     ConfirmRegistrationForm,
     UserDetailsForm,
 )
+from forms.logbook_forms import NotarialActForm
 
 # from routes.routes import index
 from api.notary_auth import match_notary_credentials
@@ -145,7 +147,6 @@ class NotarialAct(db.Model):
     date = db.Column(db.DateTime)
     time = db.Column(db.Time)
     act_type = db.Column(db.String(100))
-    other_act_type_input = db.Column(db.String(100), nullable=True)
     principal_name = db.Column(db.String(100))
     principal_addressLine1 = db.Column(db.String(100))
     principal_addressLine2 = db.Column(db.String(100))
@@ -154,7 +155,7 @@ class NotarialAct(db.Model):
     principal_zipCode = db.Column(db.String(100))
     service_number = db.Column(db.Integer)
     service_type = db.Column(db.String(100))
-    credential_type = db.Column(db.String(100))
+    principal_credential_type = db.Column(db.String(100))
     communication_tech = db.Column(db.String(100), nullable=True)
     certification_authority = db.Column(db.String(100), nullable=True)
     verification_provider = db.Column(db.String(100), nullable=True)
@@ -164,8 +165,8 @@ class NotarialAct(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "date": self.date,
-            "time": self.time,
+            "date": self.date.strftime("%Y-%m-%d") if self.date else None,
+            "time": self.time.strftime("%H:%M:%S") if self.time else None,
             "act_type": self.act_type,
             "other_act_type_input": self.other_act_type_input,
             "principal_name": self.principal_name,
@@ -176,7 +177,7 @@ class NotarialAct(db.Model):
             "principal_zipCode": self.principal_zipCode,
             "service_number": self.service_number,
             "service_type": self.service_type,
-            "credential_type": self.credential_type,
+            "principal_credential_type": self.principal_credential_type,
             "communication_tech": self.communication_tech,
             "certification_authority": self.certification_authority,
             "verification_provider": self.verification_provider,
@@ -196,10 +197,12 @@ def signup():
         if user:
             return render_template("signup.html", form=form, msg="User already exist")
 
-        role = Role.query.filter_by(id=form.options.data).first()
+        role = Role.query.filter_by(id=int(form.options.data)).first()
         session["email"] = form.email.data
         session["password"] = form.password.data
         session["role_id"] = role.id
+        print("role.id:", role.id)
+        print("session['role_id']:", session["role_id"])
 
         return redirect(url_for("signup_user_details"))
     return render_template("signup.html", form=form)
@@ -216,8 +219,11 @@ def signup_user_details():
         session["state"] = form.state.data
         session["zip_code"] = form.zip_code.data
 
+        print("session['role_id']:", session["role_id"])
         role_id = session.get("role_id")
-        if role_id in [3, 4]:  # Traditional Notary or Electronic Notary
+        if role_id in [1]:  # Admin
+            return redirect(url_for("signup_admin"))
+        elif role_id in [3, 4]:  # Traditional Notary or Electronic Notary
             return redirect(url_for("signup_notary"))
         else:
             return redirect(url_for("confirm_registration"))
@@ -233,29 +239,22 @@ def signup_user_details():
 @app.route("/signup_admin", methods=["GET", "POST"])
 def signup_admin():
     form = SignupAdminForm()
-
     if form.validate_on_submit():
+        session["special_code"] = form.special_code.data
         return redirect(url_for("confirm_registration"))
 
-    # Set the default value for the email field here, inside the route function
+    # Prepopulate hidden fields with session data
     form.email.data = session.get("email")
     form.password.data = session.get("password")
+    form.role_id.data = session.get("role_id")
+    form.full_name.data = session.get("full_name")
+    form.street_address_line_one.data = session.get("street_address_line_one")
+    form.street_address_line_two.data = session.get("street_address_line_two")
+    form.city.data = session.get("city")
+    form.state.data = session.get("state")
+    form.zip_code.data = session.get("zip_code")
 
     return render_template("signup_admin.html", form=form)
-
-
-@app.route("/signup_principal", methods=["GET", "POST"])
-def signup_principal():
-    form = SignupPrincipalForm()
-
-    if form.validate_on_submit():
-        return redirect(url_for("confirm_registration"))
-
-    # Set the default value for the email field here, inside the route function
-    form.email.data = session.get("email")
-    form.password.data = session.get("password")
-
-    return render_template("signup_principal.html", form=form)
 
 
 @app.route("/signup_notary", methods=["GET", "POST"])
@@ -282,8 +281,8 @@ def signup_notary():
             return render_template("signup_notary.html", form=form)
 
         # Store the form data and API data in the session
-        session["full_name"] = form_data["full_name"]
-        session["commission_id"] = form_data["commission_id"]
+        session["commission_holder_name"] = form_data["full_name"]
+        session["commission_number_uid"] = form_data["commission_id"]
         session["commissioned_county"] = form_data["commissioned_county"]
         session["commission_start_date"] = form_data["commission_start_date"]
         session["commission_expiration_date"] = form_data["commission_expiration_date"]
@@ -309,6 +308,11 @@ def confirm_registration():
         )
         role = Role.query.filter_by(id=session["role_id"]).first()
         user_datastore.add_role_to_user(user, role)
+
+        # If special code is in session, assign admin privileges
+        if session.get("special_code") == "swordfish":
+            admin_role = Role.query.filter_by(name="Admin").first()
+            user_datastore.add_role_to_user(user, admin_role)
 
         # Add user details
         user_details = UserDetails(
@@ -362,7 +366,7 @@ def confirm_registration():
             "Traditional" if session["role_id"] == "3" else "Electronic"
         )
 
-    return render_template("signup_final.html", form=form)
+    return render_template("confirm_registration", form=form)
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -383,15 +387,83 @@ def signin():
         return render_template("signin.html", msg=msg)
 
 
+############################## notary logbook related routes below
+
+
+@app.route("/notarylogbook")
+@roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
+def notarylogbook():
+    return render_template(
+        "mynotarylogbook.html", notarial_acts=current_user.notarial_acts
+    )
+
+
+# when handling a GET request create a new `NotarialActForm` and pass it to the template and for a POST request first validate the form and, if it's valid, then create a new NotarialAct and add it to the database.
+@app.route("/notary_log_entry", methods=["GET", "POST"])
+def notary_log_entry():
+    form = NotarialActForm()
+    if form.validate_on_submit():
+        form_data = form.data.copy()  # create a copy of form data
+        form_data.pop("submit", None)  # remove 'submit' key
+        form_data.pop("csrf_token", None)  # remove 'csrf_token' key
+        act = NotarialAct(**form_data)  # use form_data instead of form.data
+        db.session.add(act)
+        db.session.commit()
+        return redirect(url_for("notarylogbook"))
+    return render_template(
+        "notary_log_entry_form.html", form=form, action=url_for("notary_log_entry")
+    )
+
+
+@app.route("/notary_log_entry/<int:id>", methods=["GET", "POST", "DELETE"])
+#  when handling a GET request retrieve the NotarialAct with the given `id` create a `NotarialActForm` with the `act`'s data, and then pass it to the template. For a PUT request, first validate the form and, if it's valid, update the NotarialAct with the form's data. For a DELETE request just delete the NotarialAct.
+def handle_notarial_act(id):
+    act = NotarialAct.query.get(id)
+    form = NotarialActForm(obj=act)
+    if request.method == "POST":
+        if form.validate_on_submit():
+            form.populate_obj(act)
+            db.session.commit()
+            return redirect(url_for("notarylogbook"))
+    elif request.method == "DELETE":
+        db.session.delete(act)
+        db.session.commit()
+        return redirect(url_for("notarylogbook"))
+    return render_template(
+        "notary_log_entry_form.html",
+        form=form,
+        action=url_for("handle_notarial_act", id=id),
+    )
+
+
+############################# notary logbook related routes above
+
+
 ############################ new code below
-@app.route("/api/notarial_act_data")
-def notarial_act_data():
+@app.route("/notarial_act_list")
+def notarial_act_list():
     query = NotarialAct.query.filter_by(user_id=current_user.id)
 
     # search filter
     search = request.args.get("search")
     if search:
-        query = query.filter(NotarialAct.act_type.like(f"%{search}%"))
+        search_filter = or_(
+            NotarialAct.date.like(f"%{search}%"),
+            NotarialAct.time.like(f"%{search}%"),
+            NotarialAct.act_type.like(f"%{search}%"),
+            NotarialAct.principal_name.like(f"%{search}%"),
+            NotarialAct.principal_addressLine1.like(f"%{search}%"),
+            NotarialAct.principal_city.like(f"%{search}%"),
+            NotarialAct.principal_state.like(f"%{search}%"),
+            NotarialAct.principal_zipCode.like(f"%{search}%"),
+            NotarialAct.service_number.like(f"%{search}%"),
+            NotarialAct.service_type.like(f"%{search}%"),
+            NotarialAct.principal_credential_type.like(f"%{search}%"),
+            NotarialAct.communication_tech.like(f"%{search}%"),
+            NotarialAct.certification_authority.like(f"%{search}%"),
+            NotarialAct.verification_provider.like(f"%{search}%"),
+        )
+        query = query.filter(search_filter)
 
     total = query.count()
 
@@ -402,8 +474,6 @@ def notarial_act_data():
         for s in sort.split(","):
             direction = s[0]
             name = s[1:]
-            if name not in ["date", "time", "act_type"]:
-                name = "date"
             col = getattr(NotarialAct, name)
             if direction == "-":
                 col = col.desc()
@@ -422,19 +492,6 @@ def notarial_act_data():
         "data": [act.to_dict() for act in query],
         "total": total,
     }
-
-
-@app.route("/api/notarial_act_data", methods=["POST"])
-def update_notarial_act():
-    data = request.get_json()
-    if "id" not in data:
-        abort(400)
-    act = NotarialAct.query.get(data["id"])
-    for field in ["date", "time", "act_type"]:
-        if field in data:
-            setattr(act, field, data[field])
-    db.session.commit()
-    return "", 204
 
 
 ############################ new code above
@@ -477,40 +534,6 @@ def e_notaries():
 @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def mydetails():
     return render_template("mydetails.html")
-
-
-@app.route("/notarylogbook")
-@roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
-def notarylogbook():
-    return render_template(
-        "mynotarylogbook.html", notarial_acts=current_user.notarial_acts
-    )
-
-
-@app.route("/addnotarylogentry", methods=["GET", "POST"])
-def add_notary_log_entry():
-    if request.method == "POST":
-        act = NotarialAct(
-            date=request.form.get("date"),
-            time=request.form.get("time"),
-            act_type=request.form.get("act_type"),
-            other_act_type_input=request.form.get("other_act_type_input"),
-            principal_name=request.form.get("principal_name"),
-            principal_addressLine1=request.form.get("principal_addressLine1"),
-            principal_addressLine2=request.form.get("principal_addressLine2"),
-            principal_city=request.form.get("principal_city"),
-            principal_state=request.form.get("principal_state"),
-            principal_zipCode=request.form.get("principal_zipCode"),
-            service_number=request.form.get("service_number"),
-            service_type=request.form.get("service_type"),
-            credential_type=request.form.get("credential_type"),
-            communication_tech=request.form.get("communication_tech"),
-            certification_authority=request.form.get("certification_authority"),
-            verification_provider=request.form.get("verification_provider"),
-        )
-        db.session.add(act)
-        db.session.commit()
-    return render_template("addnotarialactform.html")
 
 
 @app.route("/findnotary")

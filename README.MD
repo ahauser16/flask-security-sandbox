@@ -232,6 +232,8 @@ abc123
 
 bruno69@gmail.com
 abc123
+
+
 ARTHUR John HAUSER
 01HA0018990
 Kings
@@ -447,3 +449,13 @@ def notaryauth():
             error="The provided data does not match the API's database",
         )
 ```
+
+### notes from call with Mike @ Springboard
+https://jsdoc.app/tags-example
+https://docs.oracle.com/javase/8/docs/api/
+https://docs.python.org/3/library/pydoc.html
+https://medium.com/@peterkong/comparison-of-python-documentation-generators-660203ca3804
+
+
+use this documentation guide to create basic documentation for the project.
+https://www.sphinx-doc.org/en/master/usage/quickstart.html
