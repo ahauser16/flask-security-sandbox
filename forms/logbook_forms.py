@@ -70,7 +70,7 @@ class NotarialActForm(FlaskForm):
     )
     principal_addressLine2 = StringField(
         "Address Line 2",
-        validators=[DataRequired()],
+        validators=[],
         render_kw={"placeholder": "apartment 2B"},
     )
     principal_city = StringField(
@@ -232,6 +232,7 @@ class NotarialActForm(FlaskForm):
                 "Zoom",
                 "Zoom",
             ),
+            ("N/A", "N/A"),
         ],
         validators=[DataRequired()],
     )
@@ -246,6 +247,7 @@ class NotarialActForm(FlaskForm):
                 "ID.ME",
                 "ID.ME",
             ),
+            ("N/A", "N/A"),
         ],
         validators=[DataRequired()],
     )
@@ -260,6 +262,7 @@ class NotarialActForm(FlaskForm):
                 "ID.ME",
                 "ID.ME",
             ),
+            ("N/A", "N/A"),
         ],
         validators=[DataRequired()],
     )

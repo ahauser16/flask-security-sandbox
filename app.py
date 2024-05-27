@@ -20,7 +20,7 @@ from flask_security import (
 )
 from flask_login import LoginManager, login_manager, login_user, current_user
 from flask_migrate import Migrate
-from sqlalchemy import or_
+from sqlalchemy import or_, cast, String
 import requests
 import logging
 from datetime import datetime
@@ -168,7 +168,6 @@ class NotarialAct(db.Model):
             "date": self.date.strftime("%Y-%m-%d") if self.date else None,
             "time": self.time.strftime("%H:%M:%S") if self.time else None,
             "act_type": self.act_type,
-            "other_act_type_input": self.other_act_type_input,
             "principal_name": self.principal_name,
             "principal_addressLine1": self.principal_addressLine1,
             "principal_addressLine2": self.principal_addressLine2,
@@ -393,20 +392,17 @@ def signin():
 @app.route("/notarylogbook")
 @roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
 def notarylogbook():
-    return render_template(
-        "mynotarylogbook.html", notarial_acts=current_user.notarial_acts
-    )
+    return render_template("mynotarylogbook.html")
 
 
-# when handling a GET request create a new `NotarialActForm` and pass it to the template and for a POST request first validate the form and, if it's valid, then create a new NotarialAct and add it to the database.
 @app.route("/notary_log_entry", methods=["GET", "POST"])
 def notary_log_entry():
     form = NotarialActForm()
     if form.validate_on_submit():
-        form_data = form.data.copy()  # create a copy of form data
-        form_data.pop("submit", None)  # remove 'submit' key
-        form_data.pop("csrf_token", None)  # remove 'csrf_token' key
-        act = NotarialAct(**form_data)  # use form_data instead of form.data
+        form_data = form.data.copy()
+        form_data.pop("submit", None)
+        form_data.pop("csrf_token", None)
+        act = NotarialAct(**form_data)
         db.session.add(act)
         db.session.commit()
         return redirect(url_for("notarylogbook"))
@@ -416,7 +412,6 @@ def notary_log_entry():
 
 
 @app.route("/notary_log_entry/<int:id>", methods=["GET", "POST", "DELETE"])
-#  when handling a GET request retrieve the NotarialAct with the given `id` create a `NotarialActForm` with the `act`'s data, and then pass it to the template. For a PUT request, first validate the form and, if it's valid, update the NotarialAct with the form's data. For a DELETE request just delete the NotarialAct.
 def handle_notarial_act(id):
     act = NotarialAct.query.get(id)
     form = NotarialActForm(obj=act)
@@ -428,43 +423,45 @@ def handle_notarial_act(id):
     elif request.method == "DELETE":
         db.session.delete(act)
         db.session.commit()
-        return redirect(url_for("notarylogbook"))
-    return render_template(
-        "notary_log_entry_form.html",
-        form=form,
-        action=url_for("handle_notarial_act", id=id),
-    )
+    elif request.method == "GET":
+        return render_template(
+            "notary_log_entry_form.html",
+            form=form,
+            action=url_for("handle_notarial_act", id=id),
+        )
+    return jsonify(success=False)
 
 
 ############################# notary logbook related routes above
 
 
-############################ new code below
+############################ notary logbook data route code below
 @app.route("/notarial_act_list")
 def notarial_act_list():
-    query = NotarialAct.query.filter_by(user_id=current_user.id)
+    query = NotarialAct.query
 
     # search filter
     search = request.args.get("search")
     if search:
-        search_filter = or_(
-            NotarialAct.date.like(f"%{search}%"),
-            NotarialAct.time.like(f"%{search}%"),
-            NotarialAct.act_type.like(f"%{search}%"),
-            NotarialAct.principal_name.like(f"%{search}%"),
-            NotarialAct.principal_addressLine1.like(f"%{search}%"),
-            NotarialAct.principal_city.like(f"%{search}%"),
-            NotarialAct.principal_state.like(f"%{search}%"),
-            NotarialAct.principal_zipCode.like(f"%{search}%"),
-            NotarialAct.service_number.like(f"%{search}%"),
-            NotarialAct.service_type.like(f"%{search}%"),
-            NotarialAct.principal_credential_type.like(f"%{search}%"),
-            NotarialAct.communication_tech.like(f"%{search}%"),
-            NotarialAct.certification_authority.like(f"%{search}%"),
-            NotarialAct.verification_provider.like(f"%{search}%"),
+        query = query.filter(
+            db.or_(
+                cast(NotarialAct.date, String).like(f"%{search}%"),
+                cast(NotarialAct.time, String).like(f"%{search}%"),
+                NotarialAct.act_type.like(f"%{search}%"),
+                NotarialAct.principal_name.like(f"%{search}%"),
+                NotarialAct.principal_addressLine1.like(f"%{search}%"),
+                NotarialAct.principal_addressLine2.like(f"%{search}%"),
+                NotarialAct.principal_city.like(f"%{search}%"),
+                NotarialAct.principal_state.like(f"%{search}%"),
+                NotarialAct.principal_zipCode.like(f"%{search}%"),
+                cast(NotarialAct.service_number, String).like(f"%{search}%"),
+                NotarialAct.service_type.like(f"%{search}%"),
+                NotarialAct.principal_credential_type.like(f"%{search}%"),
+                NotarialAct.communication_tech.like(f"%{search}%"),
+                NotarialAct.certification_authority.like(f"%{search}%"),
+                NotarialAct.verification_provider.like(f"%{search}%"),
+            )
         )
-        query = query.filter(search_filter)
-
     total = query.count()
 
     # sorting
@@ -474,6 +471,24 @@ def notarial_act_list():
         for s in sort.split(","):
             direction = s[0]
             name = s[1:]
+            if name not in [
+                "date",
+                "time",
+                "act_type",
+                "principal_name",
+                "principal_addressLine1",
+                "principal_addressLine2",
+                "principal_city",
+                "principal_state",
+                "principal_zipCode",
+                "service_number",
+                "service_type",
+                "principal_credential_type",
+                "communication_tech",
+                "certification_authority",
+                "verification_provider",
+            ]:
+                return {"error": "Invalid column name for sorting: " + name}, 400
             col = getattr(NotarialAct, name)
             if direction == "-":
                 col = col.desc()
@@ -494,7 +509,7 @@ def notarial_act_list():
     }
 
 
-############################ new code above
+############################ notary logbook data route code above
 
 
 @app.route("/principals")

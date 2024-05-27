@@ -139,48 +139,9 @@
     columns: [
       { id: "id", hidden: true },
       {
-        name: "Edit Button",
-        sort: false,
-        formatter: (cell, row) => {
-          return gridjs.h(
-            "a",
-            {
-              href: `/notary_log_entry/${row.cells[0].data}`,
-            },
-            "Edit"
-          );
-        },
-      },
-      {
-        name: "",
-        sort: false,
-        formatter: (cell, row) => {
-          return gridjs.h(
-            "button",
-            {
-              onClick: () => {
-                if (confirm("Are you sure you want to delete this entry?")) {
-                  fetch(`/notary_log_entry/${row.cells[0].data}`, {
-                    method: "DELETE",
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.success) {
-                        location.href = "/mynotarylogbook.html";
-                      } else {
-                        alert("Failed to delete entry");
-                      }
-                    });
-                }
-              },
-            },
-            "Delete"
-          );
-        },
-      },
-      {
         id: "date",
         name: "Date",
+        hidden: true,
         // attributes: editableCellAttributes,
         formatter: (cell) => {
           const date = new Date(cell);
@@ -192,6 +153,7 @@
       {
         id: "time",
         name: "Time",
+        hidden: true,
         formatter: (cell) => {
           const [hour, minute] = cell.split(":"); // Split the time string into hours and minutes
           const time = new Date(); // Create a new Date object
@@ -204,56 +166,144 @@
         },
       },
       {
+        id: "datetime",
+        name: "Date & Time",
+        formatter: (cell, row) => {
+          let formattedHtml = "";
+          const dateCell = row.cells[1].data; // Access the date cell data directly
+          const timeCell = row.cells[2].data; // Access the time cell data directly
+          if (dateCell) {
+            const date = new Date(dateCell);
+            formattedHtml += `${
+              date.getMonth() + 1
+            }/${date.getDate()}/${date.getFullYear()}<br>`;
+          }
+          if (timeCell) {
+            const [hour, minute] = timeCell.split(":");
+            const time = new Date();
+            time.setHours(hour, minute);
+            formattedHtml += time.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            });
+          }
+          return gridjs.html(formattedHtml);
+        },
+      },
+      {
+        id: "principal_info",
+        name: "Principal Info",
+        formatter: (cell, row) => {
+          let formattedHtml = "";
+          const principalName = row.cells[5].data;
+          const addressLine1 = row.cells[6].data;
+          const addressLine2 = row.cells[7].data;
+          const city = row.cells[8].data;
+          const state = row.cells[9].data;
+          const zipCode = row.cells[10].data;
+          formattedHtml += `${principalName}<br>${addressLine1}<br>${addressLine2}<br>${city}, ${state} ${zipCode}`;
+          return gridjs.html(formattedHtml);
+        },
+      },
+      {
         id: "principal_name",
         name: "Principal Name",
+        hidden: true,
       },
       {
         id: "principal_addressLine1",
         name: "Address Line 1",
+        hidden: true,
       },
       {
         id: "principal_addressLine2",
         name: "Address Line 2",
+        hidden: true,
       },
       {
         id: "principal_city",
         name: "City",
+        hidden: true,
       },
       {
         id: "principal_state",
         name: "State",
+        hidden: true,
       },
       {
         id: "principal_zipCode",
         name: "Zip Code",
+        hidden: true,
+      },
+      {
+        id: "notarial_act_info",
+        name: "Notarial Act Info",
+        formatter: (cell, row) => {
+          let formattedHtml = "";
+          const notarialActType = row.cells[12].data;
+          const notarialServiceType = row.cells[13].data;
+          const notarialServiceNum = row.cells[14].data;
+          formattedHtml += `${notarialActType}<br>${notarialServiceNum} - ${notarialServiceType}`;
+          return gridjs.html(formattedHtml);
+        },
       },
       {
         id: "act_type",
         name: "Act Type",
+        hidden: true,
       },
       {
         id: "service_type",
         name: "Service Type",
+        hidden: true,
       },
       {
         id: "service_number",
         name: "Service Number",
+        hidden: true,
+      },
+      {
+        id: "principal_id_info",
+        name: "Principal ID Type",
+        formatter: (cell, row) => {
+          let formattedHtml = "";
+          const principalCredentialType = row.cells[16].data;
+          formattedHtml += `${principalCredentialType}`;
+          return gridjs.html(formattedHtml);
+        },
       },
       {
         id: "principal_credential_type",
         name: "Credential Type",
+        hidden: true,
+      },
+      {
+        id: "electronic_notarial_act_info",
+        name: "Electronic Notarial Act Info",
+        formatter: (cell, row) => {
+          let formattedHtml = "";
+          const communicationTechName = row.cells[18].data;
+          const certificationAuthorityName = row.cells[19].data;
+          const verificationProviderName = row.cells[20].data;
+          formattedHtml += `Videoconference provided by: ${communicationTechName} <br> Credentials certified by: ${certificationAuthorityName} <br> ID verified by: ${verificationProviderName}`;
+          return gridjs.html(formattedHtml);
+        },
       },
       {
         id: "communication_tech",
         name: "Communication Tech",
+        hidden: true,
       },
       {
         id: "certification_authority",
         name: "Certification Authority",
+        hidden: true,
       },
       {
         id: "verification_provider",
         name: "Verification Provider",
+        hidden: true,
       },
     ],
     server: {
@@ -278,6 +328,7 @@
             "id",
             "date",
             "time",
+            "datetime",
             "act_type",
             "principal_name",
             "principal_addressLine1",
@@ -292,10 +343,18 @@
             "certification_authority",
             "verification_provider",
           ];
-          const sort = columns.map(
-            (col) => (col.direction === 1 ? "+" : "-") + columnIds[col.index]
-          );
-          return updateUrl(prev, { sort });
+          const sort = columns.map((col) => {
+            if (columns[col.index] === "datetime") {
+              // If the sorted column is 'datetime', sort by 'date' and 'time'
+              return [
+                (col.direction === 1 ? "+" : "-") + "date",
+                (col.direction === 1 ? "+" : "-") + "time",
+              ];
+            } else {
+              return (col.direction === 1 ? "+" : "-") + columnIds[col.index];
+            }
+          });
+          return updateUrl(prev, { sort: sort.flat() });
         },
       },
     },
