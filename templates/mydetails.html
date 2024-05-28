@@ -1,6 +1,6 @@
 <!-- mydetails.html -->
 
-{% extends 'base.html' %} 
+{% extends 'base.html' %}
 <!-- spacer -->
 {% block main_content %}
 <h3>My Details</h3>
@@ -10,6 +10,19 @@
 <b>Role:</b> {% for role in current_user.roles%}
 <p>{{role.name}}</p>
 {% endfor %}
+
+<b>Full Name:</b>
+<p>{{current_user.user_details.full_name }}</p>
+
+<b>Address:</b>
+<p>{{current_user.user_details.street_address_line_one }}</p>
+<p>{{current_user.user_details.street_address_line_two }}</p>
+<p>
+  {{current_user.user_details.city }}, {{current_user.user_details.state }}
+  {{current_user.user_details.zip_code }}
+</p>
+<b>Timezone:</b>
+<p>{{current_user.user_details.timezone }}</p>
 
 <b>Commission Holder Name:</b>
 <p>{{current_user.notary_credentials.commission_holder_name }}</p>
@@ -21,8 +34,10 @@
 <p>{{current_user.notary_credentials.commissioned_county }}</p>
 
 <b>Commission Start Date:</b>
-<p>{{current_user.notary_credentials.term_issue_date }}</p>
+<p>{{current_user.notary_credentials.term_issue_date.strftime('%m/%d/%Y') }}</p>
 
 <b>Commission Expiration Date:</b>
-<p>{{current_user.notary_credentials.term_expiration_date }}</p>
+<p>
+  {{current_user.notary_credentials.term_expiration_date.strftime('%m/%d/%Y') }}
+</p>
 {% endblock %}

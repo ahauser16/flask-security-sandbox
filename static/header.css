@@ -99,6 +99,12 @@ header {
     text-transform: uppercase;
 }
 
+.nav__link__body{
+    color: blue;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
 .nav__link--button {
     padding: 0.25em 0.75em;
     background: white;

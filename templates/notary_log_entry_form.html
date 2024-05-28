@@ -9,8 +9,8 @@
 <form action="{{ action }}" method="post">
   {{ form.hidden_tag() }}
   <!-- spacer  -->
-  {{ form.date.label }} {{ form.date }}<!-- spacer  -->
-  {{ form.time.label }} {{ form.time }}<!-- spacer  -->
+  {{ form.date_time.label }} {{ form.date_time }}
+  <!-- spacer  -->
   {{ form.act_type.label }} {{ form.act_type }}<!-- spacer  -->
   {{ form.principal_name.label }} {{ form.principal_name }}<!-- spacer  -->
   {{ form.principal_addressLine1.label }} {{ form.principal_addressLine1 }}<!-- spacer  -->
@@ -20,7 +20,8 @@
   {{ form.principal_zipCode.label }} {{ form.principal_zipCode }}<!-- spacer  -->
   {{ form.service_number.label }} {{ form.service_number }}<!-- spacer  -->
   {{ form.service_type.label }} {{ form.service_type }}<!-- spacer  -->
-  {{ form.principal_credential_type.label }} {{ form.principal_credential_type }}<!-- spacer  -->
+  {{ form.principal_credential_type.label }} {{ form.principal_credential_type
+  }}<!-- spacer  -->
   {{ form.communication_tech.label }} {{ form.communication_tech }}<!-- spacer  -->
   {{ form.certification_authority.label }} {{ form.certification_authority }}<!-- spacer  -->
   {{ form.verification_provider.label }} {{ form.verification_provider }}<!-- spacer  -->

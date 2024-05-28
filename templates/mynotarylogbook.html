@@ -1,6 +1,5 @@
-{% extends 'base.html' %}
-<!-- spacer  -->
-{% block base_head_content %}
+<!-- mynotarylogbook.html -->
+{% extends 'base.html' %} {% block base_head_content %}
 <link
   href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
   rel="stylesheet"
@@ -139,7 +138,8 @@
     columns: [
       { id: "id", hidden: true },
       {
-        name: "Edit Button",
+        id: "edit_button",
+        name: "Edit",
         sort: false,
         formatter: (cell, row) => {
           return gridjs.h(
@@ -152,7 +152,8 @@
         },
       },
       {
-        name: "",
+        name: "Delete",
+        id: "delete_button",
         sort: false,
         formatter: (cell, row) => {
           return gridjs.h(
@@ -179,28 +180,28 @@
         },
       },
       {
-        id: "date",
-        name: "Date",
-        // attributes: editableCellAttributes,
+        id: "date_time",
+        name: "Date & Time",
         formatter: (cell) => {
-          const date = new Date(cell);
-          return `${
+          if (!cell) {
+            return "01/01/1901 01:01:01";
+          }
+          const [dateString, timeString] = cell.split(" "); // Split the date_time string into date and time
+          const date = new Date(dateString + "T" + timeString + "Z"); // Treat the input as UTC
+          const formattedDate = `${
             date.getMonth() + 1
           }/${date.getDate()}/${date.getFullYear()}`;
-        },
-      },
-      {
-        id: "time",
-        name: "Time",
-        formatter: (cell) => {
-          const [hour, minute] = cell.split(":"); // Split the time string into hours and minutes
-          const time = new Date(); // Create a new Date object
-          time.setHours(hour, minute); // Set the hours and minutes
-          return time.toLocaleTimeString("en-US", {
+
+          const [hour, minute] = timeString.split(":");
+          const time = new Date();
+          time.setHours(hour, minute);
+          const formattedTime = time.toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "numeric",
             hour12: true,
-          }); // Format the time
+          });
+
+          return `${formattedDate} ${formattedTime}`;
         },
       },
       {
@@ -258,7 +259,10 @@
     ],
     server: {
       url: "/notarial_act_list",
-      then: (results) => results.data,
+      then: (results) => {
+        console.log(results.data); // Log the entire server response
+        return results.data;
+      },
       total: (results) => results.total,
     },
     search: {
@@ -276,8 +280,7 @@
         url: (prev, columns) => {
           const columnIds = [
             "id",
-            "date",
-            "time",
+            "date_time",
             "act_type",
             "principal_name",
             "principal_addressLine1",
@@ -295,7 +298,7 @@
           const sort = columns.map(
             (col) => (col.direction === 1 ? "+" : "-") + columnIds[col.index]
           );
-          return updateUrl(prev, { sort });
+          return updateUrl(prev, { sort: sort.join(",") });
         },
       },
     },

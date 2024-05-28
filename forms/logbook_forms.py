@@ -1,21 +1,23 @@
 # logbook_forms.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SubmitField
+from wtforms import (
+    StringField,
+    IntegerField,
+    SelectField,
+    SubmitField,
+    DateField,
+    TimeField,
+    HiddenField,
+    DateTimeField,
+)
 from wtforms.validators import DataRequired
 from datetime import datetime
+import pytz
 
 
 class NotarialActForm(FlaskForm):
-    date = StringField(
-        "Date",
-        validators=[DataRequired()],
-        render_kw={"placeholder": datetime.now().strftime("%m/%d/%Y")},
-    )
-    time = StringField(
-        "Time",
-        validators=[DataRequired()],
-        render_kw={"placeholder": datetime.now().strftime("%H:%M:%S")},
-    )
+    # the default property of the DateTimeField function controls how the form displays time which is currently set to UTC syntax.  
+    date_time = DateTimeField("Date Time", validators=[DataRequired()], default=datetime.utcnow)
     act_type = SelectField(
         "Notarial Act Type",
         choices=[
@@ -61,20 +63,22 @@ class NotarialActForm(FlaskForm):
     principal_name = StringField(
         "Principal Name",
         validators=[DataRequired()],
-        render_kw={"placeholder": "John Doe"},
+        default="Holdoor Smith",
     )
     principal_addressLine1 = StringField(
         "Address Line 1",
         validators=[DataRequired()],
-        render_kw={"placeholder": "123 Main St."},
+        default="123 Main St.",
     )
     principal_addressLine2 = StringField(
         "Address Line 2",
         validators=[],
-        render_kw={"placeholder": "apartment 2B"},
+        default="apartment 2B",
     )
     principal_city = StringField(
-        "City", validators=[DataRequired()], render_kw={"placeholder": "Brooklyn"}
+        "City",
+        validators=[DataRequired()],
+        default="Brooklyn",
     )
     principal_state = SelectField(
         "State",
@@ -133,12 +137,14 @@ class NotarialActForm(FlaskForm):
         validators=[DataRequired()],
     )
     principal_zipCode = StringField(
-        "Zip Code", validators=[DataRequired()], render_kw={"placeholder": "12345"}
+        "Zip Code",
+        validators=[DataRequired()],
+        default="12345",
     )
     service_number = IntegerField(
         "Number of Services",
         validators=[DataRequired()],
-        render_kw={"placeholder": "1"},
+        default="1",
     )
     service_type = SelectField(
         "Notarial Service Type",

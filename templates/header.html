@@ -1,90 +1,88 @@
 <header>
-    <div class="container row">
-      <button id="nav-toggle" class="nav-toggle" aria-label="open navigation">
-        <span class="hamburger"></span>
-      </button>
-      <a href="/" class="logoContainer">
-        <h1>Notarious</h1>
-      </a>
-      <nav class="nav" id="nav">
-        <ul class="nav__list nav__list--primary">
-          <li class="nav__item">
-            <a
-              href="/findnotary"
-              class="nav__link"
-              title="Access Required: Public To Unregistered Users, Admin, Principal, Traditional Notary, Electronic Notary"
-              >Find A Notary</a
-            >
-          </li>
-          {% if current_user.is_authenticated %}
-          <li class="nav__item">
-            <a
-              href="/mydetails"
-              class="nav__link"
-              title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
-              >My Details</a
-            >
-          </li>
-          <li class="nav__item">
-            <a
-              href="/myesignature"
-              class="nav__link"
-              title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
-              >My E-Signature</a
-            >
-          </li>
-          {% endif %} {% if 'Admin' in current_user.roles or 'Traditional
-          Notary' in current_user.roles or 'Electronic Notary' in
-          current_user.roles%}
-          <li class="nav__item">
-            <a
-              href="/notarylogbook"
-              class="nav__link"
-              title="Access Required: Admin, Traditional Notary, Electronic Notary"
-              >My Logbook</a
-            >
-          </li>
-          {% endif %} {% if 'Admin' in current_user.roles or 'Electronic
-          Notary' in current_user.roles%}
-          <li class="nav__item">
-            <a
-              href="/myenotarylog"
-              class="nav__link"
-              title="Access Required: Admin, Electronic Notary"
-              >My E-Logbook</a
-            >
-          </li>
-          {% endif %}
-        </ul>
-        <ul class="nav__list nav__list--secondary">
-          <!-- Show only if user is logged in -->
-          {% if current_user.is_authenticated %}
-          <!-- Show current users email -->
-          <div class="">
-            <b>Current user</b>
-            <p>{{current_user.email}}</p>
-          </div>
-          <!-- Current users roles -->
-          <div class="">
-            <b>Role</b>
-            <p>
-              {% for role in current_user.roles%} {{role.name}} {% endfor %}
-            </p>
-          </div>
-          <!-- link for logging out -->
-          <li class="nav__item">
-            <a href="/logout" class="nav__link">Logout</a>
-          </li>
-          <!-- Show if user is not logged in -->
-          {% else %}
-          <li class="nav__item">
-            <a href="/signup" class="nav__link">Sign up</a>
-          </li>
-          <li class="nav__item">
-            <a href="/signin" class="nav__link">Sign in</a>
-          </li>
-          {% endif %}
-        </ul>
-      </nav>
-    </div>
-  </header>
+  <div class="container row">
+    <button id="nav-toggle" class="nav-toggle" aria-label="open navigation">
+      <span class="hamburger"></span>
+    </button>
+    <a href="/" class="logoContainer">
+      <h1>Notarious</h1>
+    </a>
+    <nav class="nav" id="nav">
+      <ul class="nav__list nav__list--primary">
+        <li class="nav__item">
+          <a
+            href="/findnotary"
+            class="nav__link"
+            title="Access Required: Public To Unregistered Users, Admin, Principal, Traditional Notary, Electronic Notary"
+            >Find A Notary</a
+          >
+        </li>
+        <li class="nav__item">
+          <a
+            href="/resourcecenter"
+            class="nav__link"
+            title="Access Required: Public To Unregistered Users, Admin, Principal, Traditional Notary, Electronic Notary"
+            >Resource Center</a
+          >
+        </li>
+        {% if current_user.is_authenticated %}
+        <li class="nav__item">
+          <a
+            href="/mydetails"
+            class="nav__link"
+            title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+            >My Details</a
+          >
+        </li>
+        <li class="nav__item">
+          <a
+            href="/myesignature"
+            class="nav__link"
+            title="Access Required: Admin, Principal, Traditional Notary, Electronic Notary"
+            >My E-Signature</a
+          >
+        </li>
+        {% endif %}
+        <!-- -->
+        {% if 'Admin' in current_user.roles or 'Traditional Notary' in
+        current_user.roles or 'Electronic Notary' in current_user.roles%}
+        <li class="nav__item">
+          <a
+            href="/notarylogbook"
+            class="nav__link"
+            title="Access Required: Admin, Traditional Notary, Electronic Notary"
+            >My Logbook</a
+          >
+        </li>
+        {% endif %}
+        <!-- -->
+      </ul>
+      <ul class="nav__list nav__list--secondary">
+        <!-- Show only if user is logged in -->
+        {% if current_user.is_authenticated %}
+        <!-- Show current users email -->
+        <div class="">
+          <b>Current user</b>
+          <p>{{current_user.email}}</p>
+        </div>
+        <!-- Current users roles -->
+        <div class="">
+          <b>Role</b>
+          <p>{% for role in current_user.roles%} {{role.name}} {% endfor %}</p>
+        </div>
+        <!-- link for logging out -->
+        <li class="nav__item">
+          <a href="/logout" class="nav__link">Logout</a>
+        </li>
+        <!-- Show if user is not logged in -->
+        {% else %}
+        <li class="nav__item">
+          <a href="/signup" class="nav__link">Sign up</a>
+        </li>
+        <li class="nav__item">
+          <a href="/signin" class="nav__link">Sign in</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</header>

@@ -23,6 +23,7 @@ from flask_migrate import Migrate
 from sqlalchemy import or_, cast, String
 import requests
 import logging
+import pytz
 from datetime import datetime
 import urllib.parse
 
@@ -101,6 +102,7 @@ class User(db.Model, UserMixin):
     notary_credentials = db.relationship(
         "NotaryCredentials", backref="user_notary_credentials", uselist=False
     )
+    user_details = db.relationship("UserDetails", backref="user", uselist=False)
 
 
 class Role(db.Model, RoleMixin):
@@ -118,13 +120,13 @@ class UserDetails(db.Model):
     __tablename__ = "user_details"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    timezone = db.Column(db.String(50), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     street_address_line_one = db.Column(db.String(255), nullable=False)
     street_address_line_two = db.Column(db.String(255), nullable=True)
     city = db.Column(db.String(100), nullable=False)
     state = db.Column(db.String(2), nullable=False)
     zip_code = db.Column(db.String(20), nullable=False)
-    user = db.relationship("User", backref="details", uselist=False)
 
 
 class NotaryCredentials(db.Model):
@@ -144,8 +146,7 @@ class NotarialAct(db.Model):
     __tablename__ = "notarial_act"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    date = db.Column(db.DateTime)
-    time = db.Column(db.Time)
+    date_time = db.Column(db.DateTime, default=datetime.utcnow)
     act_type = db.Column(db.String(100))
     principal_name = db.Column(db.String(100))
     principal_addressLine1 = db.Column(db.String(100))
@@ -162,11 +163,22 @@ class NotarialAct(db.Model):
     user = db.relationship("User", backref=db.backref("notarial_acts", lazy=True))
 
     def to_dict(self):
+        if self.user and self.user.user_details and self.user.user_details.timezone:
+            user_tz = pytz.timezone(self.user.user_details.timezone)
+            local_date_time = (
+                self.date_time.astimezone(user_tz) if self.date_time else None
+            )
+        else:
+            local_date_time = self.date_time
+
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "date": self.date.strftime("%Y-%m-%d") if self.date else None,
-            "time": self.time.strftime("%H:%M:%S") if self.time else None,
+            "date_time": (
+                local_date_time.strftime("%Y-%m-%d %H:%M:%S")
+                if local_date_time
+                else None
+            ),
             "act_type": self.act_type,
             "principal_name": self.principal_name,
             "principal_addressLine1": self.principal_addressLine1,
@@ -217,6 +229,7 @@ def signup_user_details():
         session["city"] = form.city.data
         session["state"] = form.state.data
         session["zip_code"] = form.zip_code.data
+        session["timezone"] = form.timezone.data
 
         print("session['role_id']:", session["role_id"])
         role_id = session.get("role_id")
@@ -252,6 +265,7 @@ def signup_admin():
     form.city.data = session.get("city")
     form.state.data = session.get("state")
     form.zip_code.data = session.get("zip_code")
+    form.timezone.data = session.get("timezone")
 
     return render_template("signup_admin.html", form=form)
 
@@ -322,6 +336,7 @@ def confirm_registration():
             city=session.get("city"),
             state=session.get("state"),
             zip_code=session.get("zip_code"),
+            timezone=session.get("timezone"),
         )
         db.session.add(user_details)
 
@@ -354,6 +369,7 @@ def confirm_registration():
     form.city.data = session.get("city")
     form.state.data = session.get("state")
     form.zip_code.data = session.get("zip_code")
+    form.timezone.data = session.get("timezone")
 
     if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
         form.commission_holder_name.data = session.get("commission_holder_name")
@@ -365,7 +381,7 @@ def confirm_registration():
             "Traditional" if session["role_id"] == "3" else "Electronic"
         )
 
-    return render_template("confirm_registration", form=form)
+    return render_template("confirm_registration.html", form=form)
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -397,11 +413,19 @@ def notarylogbook():
 
 @app.route("/notary_log_entry", methods=["GET", "POST"])
 def notary_log_entry():
+    # Fetch the timezone from the database
+    # user_tz = current_user.user_details.timezone
+    # form = NotarialActForm(user_tz)
     form = NotarialActForm()
     if form.validate_on_submit():
+        # user_tz = pytz.timezone(current_user.user_details.timezone)
+        # local_dt = form.date_time.data
+        # utc_dt = user_tz.localize(local_dt).astimezone(pytz.utc)
         form_data = form.data.copy()
         form_data.pop("submit", None)
         form_data.pop("csrf_token", None)
+        # form_data.pop("timezone", None)
+        # form_data["date_time"] = utc_dt
         act = NotarialAct(**form_data)
         db.session.add(act)
         db.session.commit()
@@ -411,8 +435,13 @@ def notary_log_entry():
     )
 
 
+# 2024-05-28 21:34:20
+
+
 @app.route("/notary_log_entry/<int:id>", methods=["GET", "POST", "DELETE"])
 def handle_notarial_act(id):
+    # Fetch the timezone from the database
+    # user_tz = current_user.user_details.timezone
     act = NotarialAct.query.get(id)
     form = NotarialActForm(obj=act)
     if request.method == "POST":
@@ -432,6 +461,18 @@ def handle_notarial_act(id):
     return jsonify(success=False)
 
 
+@app.template_filter("dateformat")
+def dateformat(value, timezone):
+    user_tz = pytz.timezone(timezone)
+    return value.astimezone(user_tz).strftime("%Y-%m-%d")
+
+
+@app.template_filter("timeformat")
+def timeformat(value, timezone):
+    user_tz = pytz.timezone(timezone)
+    return value.astimezone(user_tz).strftime("%H:%M")
+
+
 ############################# notary logbook related routes above
 
 
@@ -442,11 +483,11 @@ def notarial_act_list():
 
     # search filter
     search = request.args.get("search")
+    logging.info(f"Received search parameter: {search}")
     if search:
         query = query.filter(
             db.or_(
-                cast(NotarialAct.date, String).like(f"%{search}%"),
-                cast(NotarialAct.time, String).like(f"%{search}%"),
+                cast(NotarialAct.date_time, String).like(f"%{search}%"),
                 NotarialAct.act_type.like(f"%{search}%"),
                 NotarialAct.principal_name.like(f"%{search}%"),
                 NotarialAct.principal_addressLine1.like(f"%{search}%"),
@@ -463,17 +504,21 @@ def notarial_act_list():
             )
         )
     total = query.count()
+    logging.info(f"Total records before sorting and pagination: {total}")
 
     # sorting
     sort = request.args.get("sort")
+    logging.info(f"Received sort parameters: {sort}")
     if sort:
         order = []
         for s in sort.split(","):
             direction = s[0]
             name = s[1:]
+            logging.info(
+                f"Processing sort parameter: {s}, direction: {direction}, name: {name}"
+            )
             if name not in [
-                "date",
-                "time",
+                "date_time",
                 "act_type",
                 "principal_name",
                 "principal_addressLine1",
@@ -493,18 +538,22 @@ def notarial_act_list():
             if direction == "-":
                 col = col.desc()
             order.append(col)
+        logging.info(f"Generated order: {order}")
         if order:
             query = query.order_by(*order)
 
     # pagination
     start = request.args.get("start", type=int, default=-1)
     length = request.args.get("length", type=int, default=-1)
+    logging.info(f"Received pagination parameters: start={start}, length={length}")
     if start != -1 and length != -1:
         query = query.offset(start).limit(length)
 
     # response
+    data = [act.to_dict() for act in query]
+    logging.info(f"Returning {len(data)} records")
     return {
-        "data": [act.to_dict() for act in query],
+        "data": data,
         "total": total,
     }
 
@@ -555,6 +604,12 @@ def mydetails():
 # @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def findnotary():
     return render_template("findnotary.html")
+
+
+@app.route("/resourcecenter")
+# @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def resourcecenter():
+    return render_template("resourcecenter.html")
 
 
 @app.route("/myesignature")

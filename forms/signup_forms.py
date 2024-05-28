@@ -11,6 +11,7 @@ from wtforms import (
     SelectField,
 )
 from wtforms.validators import DataRequired, Email, ValidationError
+from pytz import all_timezones
 
 
 class SignupForm(FlaskForm):
@@ -96,6 +97,7 @@ class UserDetailsForm(FlaskForm):
         validators=[DataRequired()],
     )
     zip_code = StringField("Zip Code", validators=[DataRequired()])
+    timezone = SelectField("Timezone", choices=[(tz, tz) for tz in all_timezones])
     submit = SubmitField("Submit")
 
 
@@ -144,6 +146,7 @@ class ConfirmRegistrationForm(FlaskForm):
     city = HiddenField("City")
     state = HiddenField("State")
     zip_code = HiddenField("Zip Code")
+    timezone = HiddenField("Timezone")
     commission_holder_name = HiddenField("Commission Holder Name")
     commission_number_uid = HiddenField("Commission Number/UID")
     commissioned_county = HiddenField("Commissioned County")
