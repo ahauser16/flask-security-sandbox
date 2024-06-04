@@ -8,6 +8,7 @@ from flask import (
     session,
     abort,
     flash,
+    current_app,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import (
@@ -21,11 +22,14 @@ from flask_security import (
 from flask_login import LoginManager, login_manager, login_user, current_user
 from flask_migrate import Migrate
 from sqlalchemy import or_, cast, String
+from google.cloud import storage
 import requests
 import logging
 import pytz
 from datetime import datetime
 import urllib.parse
+from werkzeug.utils import secure_filename
+import os
 
 from forms.signup_forms import (
     SignupForm,
@@ -35,6 +39,7 @@ from forms.signup_forms import (
     UserDetailsForm,
 )
 from forms.logbook_forms import NotarialActForm
+from forms.document_forms import UploadDocumentForm
 
 # from routes.routes import index
 from api.notary_auth import match_notary_credentials
@@ -83,12 +88,35 @@ def create_tables():
         db.session.commit()
         print("Roles created successfully!")
 
+    # Check if document roles already exist in the database
+    if not DocumentRole.query.first():
+        document_roles = [
+            DocumentRole(id=1, name="Admin"),
+            DocumentRole(id=2, name="Principal"),
+            DocumentRole(id=3, name="Traditional Notary"),
+            DocumentRole(id=4, name="Electronic Notary"),
+        ]
+
+        for document_role in document_roles:
+            db.session.add(document_role)
+
+        db.session.commit()
+        print("Document roles created successfully!")
+
 
 # role_users must be defined before the User and Role classes
 roles_users = db.Table(
     "roles_users",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
     db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
+)
+
+
+# DocumentRole-User is an association table that links `User` and `DocumentRole``
+document_role_users = db.Table(
+    "document_role_users",
+    db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
+    db.Column("document_role_id", db.Integer(), db.ForeignKey("document_role.id")),
 )
 
 
@@ -103,6 +131,13 @@ class User(db.Model, UserMixin):
         "NotaryCredentials", backref="user_notary_credentials", uselist=False
     )
     user_details = db.relationship("UserDetails", backref="user", uselist=False)
+    employer_id = db.Column(
+        db.Integer, db.ForeignKey("employer_details.id"), nullable=True
+    )
+    # The document_roles field is a relationship field that links a user or a document to its roles.
+    document_roles = db.relationship(
+        "DocumentRole", secondary=document_role_users, backref="users"
+    )
 
 
 class Role(db.Model, RoleMixin):
@@ -116,6 +151,21 @@ user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
 security = Security(app, user_datastore)
 
 
+# DocumentRole model represents the role a user takes when dealing with a specific document.
+class DocumentRole(db.Model):
+    __tablename__ = "document_role"
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+
+
+# DocumentRole-PDFDocument is an association table that links PDFDocument and DocumentRole
+document_role_documents = db.Table(
+    "document_role_documents",
+    db.Column("pdf_document_id", db.Integer(), db.ForeignKey("pdf_document.id")),
+    db.Column("document_role_id", db.Integer(), db.ForeignKey("document_role.id")),
+)
+
+
 class UserDetails(db.Model):
     __tablename__ = "user_details"
     id = db.Column(db.Integer, primary_key=True)
@@ -127,6 +177,36 @@ class UserDetails(db.Model):
     city = db.Column(db.String(100), nullable=False)
     state = db.Column(db.String(2), nullable=False)
     zip_code = db.Column(db.String(20), nullable=False)
+
+
+class EmployerDetails(db.Model):
+    __tablename__ = "employer_details"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    street_address_line_one = db.Column(db.String(255), nullable=False)
+    street_address_line_two = db.Column(db.String(255), nullable=True)
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(2), nullable=False)
+    zip_code = db.Column(db.String(20), nullable=False)
+    ein_number = db.Column(db.String(20), nullable=False, unique=True)
+    users = db.relationship("User", backref="employer", lazy=True)
+
+
+class PDFDocument(db.Model):
+    __tablename__ = "pdf_document"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(100), nullable=False)
+    file_url = db.Column(db.String(200), nullable=False)
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(10), nullable=False, default="Unsigned")
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User", backref="pdf_documents")
+    size = db.Column(db.Integer)  # Size of the file in bytes
+    content_type = db.Column(db.String(100))  # MIME type of the file
+    # The document_roles field is a relationship field that links a user or a document to its roles.
+    document_roles = db.relationship(
+        "DocumentRole", secondary=document_role_documents, backref="pdf_documents"
+    )
 
 
 class NotaryCredentials(db.Model):
@@ -598,6 +678,53 @@ def e_notaries():
 @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def mydetails():
     return render_template("mydetails.html")
+
+
+@app.route("/mydocuments", methods=["GET", "POST"])
+@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def mydocuments():
+    form = UploadDocumentForm()
+    if form.validate_on_submit():
+        f = form.document.data
+        filename = secure_filename(f.filename)
+
+        # Create a Cloud Storage client.
+        gcs = storage.Client()
+
+        # Get the bucket that the file will be uploaded to.
+        bucket = gcs.get_bucket(current_app.config["NOTARIOUS_TEST_BUCKET"])
+
+        # Create a new blob and upload the file's content.
+        blob = bucket.blob(filename)
+        blob.upload_from_string(f.read(), content_type=f.content_type)
+
+        # Make the blob publicly viewable.
+        blob.make_public()
+
+        # The URL can be used to directly access the uploaded file.
+        file_url = blob.public_url
+        # Create a new PDFDocument object
+        document = PDFDocument(
+            filename=filename,
+            file_url=file_url,
+            user_id=current_user.id,
+            size=blob.size,
+            content_type=f.content_type,
+        )
+
+        # Get the document role
+        document_role_name = form.document_role.data
+        document_role = DocumentRole.query.filter_by(name=document_role_name).first()
+
+        # Add the document role to the document
+        document.document_roles.append(document_role)
+
+        # Add the document to the session and commit
+        db.session.add(document)
+        db.session.commit()
+
+        return redirect(url_for("mydocuments"))
+    return render_template("mydocuments.html", form=form)
 
 
 @app.route("/findnotary")
