@@ -9,6 +9,8 @@ from flask import (
     abort,
     flash,
     current_app,
+    send_file,
+    send_from_directory,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import (
@@ -39,7 +41,7 @@ from forms.signup_forms import (
     UserDetailsForm,
 )
 from forms.logbook_forms import NotarialActForm
-from forms.document_forms import UploadDocumentForm
+from forms.document_forms import UploadDocumentForm, DeleteDocumentForm
 
 # from routes.routes import index
 from api.notary_auth import match_notary_credentials
@@ -67,6 +69,9 @@ handler.setLevel(logging.INFO)  # Set the handler level to INFO
 
 # Add the handler to the logger
 logger.addHandler(handler)
+
+# retrieves the value of the UPLOAD_FOLDER configuration variable
+upload_folder = app.config["UPLOAD_FOLDER"]
 
 
 @app.before_first_request
@@ -196,13 +201,14 @@ class PDFDocument(db.Model):
     __tablename__ = "pdf_document"
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100), nullable=False)
-    file_url = db.Column(db.String(200), nullable=False)
+    filepath = db.Column(db.String(500))  # New column to store the file path
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(10), nullable=False, default="Unsigned")
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     user = db.relationship("User", backref="pdf_documents")
     size = db.Column(db.Integer)  # Size of the file in bytes
     content_type = db.Column(db.String(100))  # MIME type of the file
+    notes = db.Column(db.String(500))  # New column to store the notes
     # The document_roles field is a relationship field that links a user or a document to its roles.
     document_roles = db.relationship(
         "DocumentRole", secondary=document_role_documents, backref="pdf_documents"
@@ -680,36 +686,43 @@ def mydetails():
     return render_template("mydetails.html")
 
 
-@app.route("/mydocuments", methods=["GET", "POST"])
+##################################################
+
+
+@app.route("/mydocuments", methods=["GET"])
 @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def mydocuments():
+    # Query the documents from the database
+    documents = PDFDocument.query.filter_by(user_id=current_user.id).all()
+    delete_document_form = DeleteDocumentForm()
+    return render_template(
+        "mydocuments.html",
+        documents=documents,
+        delete_document_form=delete_document_form,
+    )
+
+
+@app.route("/upload_document", methods=["GET", "POST"])
+@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def upload_document():
     form = UploadDocumentForm()
     if form.validate_on_submit():
         f = form.document.data
         filename = secure_filename(f.filename)
+        file_data = f.read()  # Read the file data
 
-        # Create a Cloud Storage client.
-        gcs = storage.Client()
+        # Save the file to the file system
+        file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        f.save(file_path)
 
-        # Get the bucket that the file will be uploaded to.
-        bucket = gcs.get_bucket(current_app.config["NOTARIOUS_TEST_BUCKET"])
-
-        # Create a new blob and upload the file's content.
-        blob = bucket.blob(filename)
-        blob.upload_from_string(f.read(), content_type=f.content_type)
-
-        # Make the blob publicly viewable.
-        blob.make_public()
-
-        # The URL can be used to directly access the uploaded file.
-        file_url = blob.public_url
         # Create a new PDFDocument object
         document = PDFDocument(
             filename=filename,
-            file_url=file_url,
+            filepath=file_path,  # Save the file path to the new column
             user_id=current_user.id,
-            size=blob.size,
+            size=len(file_data),  # Update the size to the length of the file data
             content_type=f.content_type,
+            notes=form.notes.data,  # Save the notes to the new column
         )
 
         # Get the document role
@@ -724,7 +737,61 @@ def mydocuments():
         db.session.commit()
 
         return redirect(url_for("mydocuments"))
-    return render_template("mydocuments.html", form=form)
+
+    return render_template("upload_document.html", form=form)
+
+
+@app.route("/download_document/<int:document_id>")
+@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def download_document(document_id):
+    # Query the document from the database
+    document = PDFDocument.query.get(document_id)
+    if document is None:
+        abort(404)  # Not found
+
+    file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], document.filename)
+    print(f"File path: {file_path}")  # Print the file path
+
+    if not os.path.isfile(file_path):
+        print(
+            f"File does not exist: {file_path}"
+        )  # Print a message if the file does not exist
+
+    # Send the file to the client
+    return send_from_directory(current_app.config["UPLOAD_FOLDER"], document.filename)
+
+
+@app.route("/delete_document/<int:document_id>", methods=["POST"])
+@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def delete_document(document_id):
+    # Query the document from the database
+    document = PDFDocument.query.get(document_id)
+    if document is None:
+        abort(404)  # Not found
+
+    # Delete the file from the file system
+    os.remove(document.filepath)
+
+    # Delete the document from the database
+    db.session.delete(document)
+    db.session.commit()
+
+    return redirect(url_for("mydocuments"))
+
+
+@app.route("/view_document/<int:document_id>")
+@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
+def view_document(document_id):
+    # Query the document from the database
+    document = PDFDocument.query.get(document_id)
+    if document is None:
+        abort(404)  # Not found
+
+    # Render the view_document.html template
+    return render_template("view_document.html", document=document)
+
+
+###############################
 
 
 @app.route("/findnotary")

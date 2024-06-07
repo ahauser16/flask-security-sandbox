@@ -1,0 +1,22 @@
+<!-- document_macros.html -->
+{% macro render_document_info(document) %}
+<ul class="document_info">
+  <li>ID: {{ document.id }}</li>
+  <li>Filename: {{ document.filename }}</li>
+  <li>Filepath: {{ document.filepath }}</li>
+  <li>Upload Date: {{ document.upload_date }}</li>
+  <li>Status: {{ document.status }}</li>
+  <li>User ID: {{ document.user_id }}</li>
+  <li>Size: {{ document.size }}</li>
+  <li>Content Type: {{ document.content_type }}</li>
+  <li>Notes: {{ document.notes }}</li>
+  <li>
+    Document Roles:
+    <ul>
+      {% for role in document.document_roles %}
+      <li>{{ role.name }}</li>
+      {% endfor %}
+    </ul>
+  </li>
+</ul>
+{% endmacro %}

@@ -1,0 +1,25 @@
+<!-- upload_document.html -->
+{% extends 'base.html' %}
+<!-- spacer -->
+{% block main_content %}
+<h2>My Documents</h2>
+<br />
+<h3>Upload a document</h3>
+<form method="POST" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+  <p>
+    {{ form.document.label }}<br />
+    {{ form.document(size=32) }}
+  </p>
+  <p>
+    {{ form.document_role.label }}<br />
+    {{ form.document_role }}
+  </p>
+  <p>
+    {{ form.notes.label }}<br />
+    {{ form.notes }}
+  </p>
+  <p>{{ form.submit() }}</p>
+</form>
+<!--     -->
+{% endblock %}

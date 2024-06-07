@@ -1,0 +1,9 @@
+<!-- form_macros.html -->
+{% macro render_delete_document_form(form, document_id) %}
+<form
+  method="POST"
+  action="{{ url_for('delete_document', document_id=document_id) }}"
+>
+  {{ form.hidden_tag() }} {{ form.submit() }}
+</form>
+{% endmacro %}
