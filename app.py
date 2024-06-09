@@ -294,12 +294,13 @@ def signup():
         if user:
             return render_template("signup.html", form=form, msg="User already exist")
 
-        role = Role.query.filter_by(id=int(form.options.data)).first()
+        role = Role.query.filter_by(id=int(form.role.data)).first()
         session["email"] = form.email.data
         session["password"] = form.password.data
-        session["role_id"] = role.id
-        print("role.id:", role.id)
-        print("session['role_id']:", session["role_id"])
+        session["role_ids"] = [role.id]
+        if form.is_admin.data:  # Admin ONLY
+            admin_role = Role.query.filter_by(name="Admin").first()
+            session["role_ids"].append(admin_role.id)
 
         return redirect(url_for("signup_user_details"))
     return render_template("signup.html", form=form)
@@ -317,43 +318,34 @@ def signup_user_details():
         session["zip_code"] = form.zip_code.data
         session["timezone"] = form.timezone.data
 
-        print("session['role_id']:", session["role_id"])
-        role_id = session.get("role_id")
-        if role_id in [1]:  # Admin
+        # Get the role_ids from the session
+        role_ids = session.get("role_ids")
+
+        # Query the Role table to get the id of each role
+        role_id_admin = Role.query.filter_by(name="Admin").first().id
+        role_id_princ = Role.query.filter_by(name="Principal").first().id
+        role_id_trad_notary = Role.query.filter_by(name="Traditional Notary").first().id
+        role_id_e_notary = Role.query.filter_by(name="Electronic Notary").first().id
+
+        # Check the role_ids and redirect accordingly
+        if (
+            role_id_admin in role_ids and role_id_princ in role_ids
+        ):  # Admin and Principal
             return redirect(url_for("signup_admin"))
-        elif role_id in [3, 4]:  # Traditional Notary or Electronic Notary
+        elif role_id_admin in role_ids and (
+            role_id_trad_notary in role_ids or role_id_e_notary in role_ids
+        ):  # Admin and Notary
+            return redirect(url_for("signup_notary"))
+        elif role_id_princ in role_ids and len(role_ids) == 1:  # Principal only
+            return redirect(url_for("confirm_registration"))
+        elif (role_id_trad_notary in role_ids or role_id_e_notary in role_ids) and len(
+            role_ids
+        ) == 1:  # Notary only
             return redirect(url_for("signup_notary"))
         else:
-            return redirect(url_for("confirm_registration"))
-
-    # Prepopulate hidden fields with session data
-    form.email.data = session.get("email")
-    form.password.data = session.get("password")
-    form.role_id.data = session.get("role_id")
+            return redirect(url_for("throw_error"))
 
     return render_template("signup_user_details.html", form=form)
-
-
-@app.route("/signup_admin", methods=["GET", "POST"])
-def signup_admin():
-    form = SignupAdminForm()
-    if form.validate_on_submit():
-        session["special_code"] = form.special_code.data
-        return redirect(url_for("confirm_registration"))
-
-    # Prepopulate hidden fields with session data
-    form.email.data = session.get("email")
-    form.password.data = session.get("password")
-    form.role_id.data = session.get("role_id")
-    form.full_name.data = session.get("full_name")
-    form.street_address_line_one.data = session.get("street_address_line_one")
-    form.street_address_line_two.data = session.get("street_address_line_two")
-    form.city.data = session.get("city")
-    form.state.data = session.get("state")
-    form.zip_code.data = session.get("zip_code")
-    form.timezone.data = session.get("timezone")
-
-    return render_template("signup_admin.html", form=form)
 
 
 @app.route("/signup_notary", methods=["GET", "POST"])
@@ -362,8 +354,6 @@ def signup_notary():
 
     if form.validate_on_submit():
         form_data = {
-            "email": session.get("email"),
-            "password": session.get("password"),
             "full_name": form.full_name.data,
             "commission_id": form.commission_id.data,
             "commissioned_county": form.commissioned_county.data,
@@ -389,85 +379,118 @@ def signup_notary():
             "commission_type_traditional_or_electronic"
         ]
 
-        return redirect(url_for("confirm_registration"))
+        # Get the role_ids from the session
+        role_ids = session.get("role_ids")
 
-    # Set the default value for the email and password fields here, inside the route function
-    form.email.data = session.get("email")
-    form.password.data = session.get("password")
+        # Query the Role table to get the id of each role
+        role_id_admin = Role.query.filter_by(name="Admin").first().id
+        role_id_trad_notary = Role.query.filter_by(name="Traditional Notary").first().id
+        role_id_e_notary = Role.query.filter_by(name="Electronic Notary").first().id
+
+        # Check the role_ids and redirect accordingly
+        if role_id_admin in role_ids and (
+            role_id_trad_notary in role_ids or role_id_e_notary in role_ids
+        ):  # Admin and Notary
+            return redirect(url_for("signup_admin"))
+        elif (
+            role_id_trad_notary in role_ids or role_id_e_notary in role_ids
+        ):  # Notary only
+            return redirect(url_for("confirm_registration"))
+        else:
+            return redirect(url_for("throw_error"))
 
     return render_template("signup_notary.html", form=form)
+
+
+@app.route("/signup_admin", methods=["GET", "POST"])
+def signup_admin():
+    form = SignupAdminForm()
+    if form.validate_on_submit():
+        session["special_code"] = form.special_code.data
+        return redirect(url_for("confirm_registration"))
+
+    return render_template("signup_admin.html", form=form)
 
 
 @app.route("/confirm_registration", methods=["GET", "POST"])
 def confirm_registration():
     form = ConfirmRegistrationForm()
+
+    # Get the role_ids from the session
+    role_ids = session.get("role_ids", [])
+
+    # Query the Role table to get the id of each role
+    roles = Role.query.all()
+    role_ids_dict = {role.id: role.name for role in roles}
+
+    # Map the role IDs to their names
+    session_role_names = [
+        role_ids_dict[role_id] for role_id in role_ids if role_id in role_ids_dict
+    ]
+
+    # Create signup_form_data from session
+    signup_form_data = {
+        "email": session.get("email"),
+        "password": session.get("password"),
+        "role": session.get("role"),
+        "is_admin": session.get("is_admin"),
+    }
+    
+    # Create userdetails_form_data from session
+    userdetails_form_data = {
+        "full_name": session.get("full_name"),
+        "street_address_line_one": session.get("street_address_line_one"),
+        "street_address_line_two": session.get("street_address_line_two"),
+        "city": session.get("city"),
+        "state": session.get("state"),
+        "zip_code": session.get("zip_code"),
+        "timezone": session.get("timezone"),
+    }
+    
+    form = ConfirmRegistrationForm(data=signup_form_data)
+
+    print(session)
+
     if form.validate_on_submit():
+        # Create the user
         user = user_datastore.create_user(
             email=session["email"], password=session["password"]
         )
-        role = Role.query.filter_by(id=session["role_id"]).first()
-        user_datastore.add_role_to_user(user, role)
 
-        # If special code is in session, assign admin privileges
-        if session.get("special_code") == "swordfish":
-            admin_role = Role.query.filter_by(name="Admin").first()
-            user_datastore.add_role_to_user(user, admin_role)
+        # Add roles to the user
+        for role_id in role_ids:
+            role = Role.query.get(role_id)
+            user_datastore.add_role_to_user(user, role)
 
         # Add user details
-        user_details = UserDetails(
-            user_id=user.id,
-            full_name=session.get("full_name"),
-            street_address_line_one=session.get("street_address_line_one"),
-            street_address_line_two=session.get("street_address_line_two"),
-            city=session.get("city"),
-            state=session.get("state"),
-            zip_code=session.get("zip_code"),
-            timezone=session.get("timezone"),
-        )
+        user_details_data = {
+            key: session[key] for key in form.data.keys() if key in session
+        }
+        user_details_data["user_id"] = user.id
+        user_details = UserDetails(**user_details_data)
         db.session.add(user_details)
 
         # If user is a notary, add notary credentials
-        if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
-            notary_credentials = NotaryCredentials(
-                user_id=user.id,
-                commission_holder_name=session.get("commission_holder_name"),
-                commission_number_uid=session.get("commission_number_uid"),
-                commissioned_county=session.get("commissioned_county"),
-                commission_type_traditional_or_electronic=(
-                    "Traditional" if session["role_id"] == 3 else "Electronic"
-                ),
-                term_issue_date=session.get("commission_start_date"),
-                term_expiration_date=session.get("commission_expiration_date"),
-            )
+        if (
+            "Traditional Notary" in session_role_names
+            or "Electronic Notary" in session_role_names
+        ):
+            notary_credentials_data = {
+                key: session[key]
+                for key in form.data.keys()
+                if "commission" in key and key in session
+            }
+            notary_credentials_data["user_id"] = user.id
+            notary_credentials = NotaryCredentials(**notary_credentials_data)
             db.session.add(notary_credentials)
 
         db.session.commit()
         login_user(user)
         return redirect(url_for("index"))
 
-    # Prepopulate hidden fields with session data
-    form.email.data = session.get("email")
-    form.password.data = session.get("password")
-    form.role_id.data = session.get("role_id")
-    form.full_name.data = session.get("full_name")
-    form.street_address_line_one.data = session.get("street_address_line_one")
-    form.street_address_line_two.data = session.get("street_address_line_two")
-    form.city.data = session.get("city")
-    form.state.data = session.get("state")
-    form.zip_code.data = session.get("zip_code")
-    form.timezone.data = session.get("timezone")
-
-    if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
-        form.commission_holder_name.data = session.get("commission_holder_name")
-        form.commission_number_uid.data = session.get("commission_number_uid")
-        form.commissioned_county.data = session.get("commissioned_county")
-        form.commission_start_date.data = session.get("commission_start_date")
-        form.commission_expiration_date.data = session.get("commission_expiration_date")
-        form.commission_type_traditional_or_electronic.data = (
-            "Traditional" if session["role_id"] == "3" else "Electronic"
-        )
-
-    return render_template("confirm_registration.html", form=form)
+    return render_template(
+        "confirm_registration.html", form=form, role_names=session_role_names
+    )
 
 
 @app.route("/signin", methods=["GET", "POST"])
@@ -498,20 +521,14 @@ def notarylogbook():
 
 
 @app.route("/notary_log_entry", methods=["GET", "POST"])
+@roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
 def notary_log_entry():
-    # Fetch the timezone from the database
-    # user_tz = current_user.user_details.timezone
-    # form = NotarialActForm(user_tz)
     form = NotarialActForm()
     if form.validate_on_submit():
-        # user_tz = pytz.timezone(current_user.user_details.timezone)
-        # local_dt = form.date_time.data
-        # utc_dt = user_tz.localize(local_dt).astimezone(pytz.utc)
         form_data = form.data.copy()
         form_data.pop("submit", None)
         form_data.pop("csrf_token", None)
-        # form_data.pop("timezone", None)
-        # form_data["date_time"] = utc_dt
+        form_data["user_id"] = current_user.id  # Set the user_id to current_user's id
         act = NotarialAct(**form_data)
         db.session.add(act)
         db.session.commit()
@@ -521,14 +538,14 @@ def notary_log_entry():
     )
 
 
-# 2024-05-28 21:34:20
-
-
 @app.route("/notary_log_entry/<int:id>", methods=["GET", "POST", "DELETE"])
+@roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
 def handle_notarial_act(id):
-    # Fetch the timezone from the database
-    # user_tz = current_user.user_details.timezone
     act = NotarialAct.query.get(id)
+    if (
+        act.user_id != current_user.id
+    ):  # Check if the current user is the owner of the act
+        abort(403)  # If not, return a 403 Forbidden status code
     form = NotarialActForm(obj=act)
     if request.method == "POST":
         if form.validate_on_submit():
@@ -565,7 +582,11 @@ def timeformat(value, timezone):
 ############################ notary logbook data route code below
 @app.route("/notarial_act_list")
 def notarial_act_list():
-    query = NotarialAct.query
+    # Get the current user's ID
+    current_user_id = current_user.id
+
+    # Filter the NotarialAct records by the current user's ID
+    query = NotarialAct.query.filter_by(user_id=current_user_id)
 
     # search filter
     search = request.args.get("search")
@@ -810,6 +831,11 @@ def resourcecenter():
 @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def myesignature():
     return render_template("myesignature.html")
+
+
+@app.route("/throw_error")
+def throw_error():
+    return render_template("throw_error.html")
 
 
 if __name__ == "__main__":

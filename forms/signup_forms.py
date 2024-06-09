@@ -9,6 +9,8 @@ from wtforms import (
     HiddenField,
     DateField,
     SelectField,
+    SelectMultipleField,
+    BooleanField,
 )
 from wtforms.validators import DataRequired, Email, ValidationError
 from pytz import all_timezones
@@ -17,23 +19,20 @@ from pytz import all_timezones
 class SignupForm(FlaskForm):
     email = StringField("Email Address", validators=[DataRequired(), Email()])
     password = PasswordField("Password", validators=[DataRequired()])
-    options = RadioField(
+    role = RadioField(
         "Role",
         choices=[
-            ("1", "Admin"),
             ("2", "Principal"),
             ("3", "Traditional Notary"),
             ("4", "Electronic Notary"),
         ],
         validators=[DataRequired()],
     )
+    is_admin = BooleanField("Admin")
     submit = SubmitField("Submit")
 
 
 class UserDetailsForm(FlaskForm):
-    email = HiddenField("Email")
-    password = HiddenField("Password")
-    role_id = HiddenField("Role ID")
     full_name = StringField("Full Name", validators=[DataRequired()])
     street_address_line_one = StringField(
         "Street Address Line One", validators=[DataRequired()]
@@ -102,8 +101,6 @@ class UserDetailsForm(FlaskForm):
 
 
 class SignupNotaryForm(FlaskForm):
-    email = HiddenField("Email")
-    password = HiddenField("Password")
     full_name = StringField("Full Name", validators=[DataRequired()])
     commission_id = StringField("Commission ID", validators=[DataRequired()])
     commissioned_county = StringField(
@@ -119,15 +116,6 @@ class SignupNotaryForm(FlaskForm):
 
 
 class SignupAdminForm(FlaskForm):
-    email = HiddenField("Email")
-    password = HiddenField("Password")
-    role_id = HiddenField("Role ID")
-    full_name = HiddenField("Full Name")
-    street_address_line_one = HiddenField("Street Address Line One")
-    street_address_line_two = HiddenField("Street Address Line Two")
-    city = HiddenField("City")
-    state = HiddenField("State")
-    zip_code = HiddenField("Zip Code")
     special_code = StringField("Special Code", validators=[DataRequired()])
     submit = SubmitField("Submit")
 
@@ -137,20 +125,8 @@ class SignupAdminForm(FlaskForm):
 
 
 class ConfirmRegistrationForm(FlaskForm):
-    email = HiddenField("Email")
-    password = HiddenField("Password")
-    role_id = HiddenField("Role ID")
-    full_name = HiddenField("Full Name")
-    street_address_line_one = HiddenField("Street Address Line One")
-    street_address_line_two = HiddenField("Street Address Line Two")
-    city = HiddenField("City")
-    state = HiddenField("State")
-    zip_code = HiddenField("Zip Code")
-    timezone = HiddenField("Timezone")
-    commission_holder_name = HiddenField("Commission Holder Name")
-    commission_number_uid = HiddenField("Commission Number/UID")
-    commissioned_county = HiddenField("Commissioned County")
-    commission_start_date = HiddenField("Commission Start Date")
-    commission_expiration_date = HiddenField("Commission Expiration Date")
-    commission_type_traditional_or_electronic = HiddenField("Commission Type")
+    email = HiddenField()
+    password = HiddenField()
+    role = HiddenField()
+    is_admin = HiddenField()
     submit = SubmitField("Confirm Registration")

@@ -1,3 +1,4 @@
+<!-- signup_user_details.html -->
 {% extends 'base.html' %} {% block main_content %}
 <h2>Enter Your Details</h2>
 
@@ -6,28 +7,29 @@
   method="POST"
   id="user-details-form"
 >
-  {{ form.hidden_tag() }}
-  <!--  -->
-  {{ form.email(value=session['email']) }}
-  <!--  -->
-  {{ form.password(value=session['password']) }}
-  <!--  -->
-  {{ form.role_id(value=session['role_id']) }}
+  {{ form.hidden_tag() }} {{ form.csrf_token }}
   <!--  -->
   {{ form.full_name.label }} {{ form.full_name() }}
   <!--  -->
+  <br />
   {{ form.street_address_line_one.label }} {{ form.street_address_line_one() }}
   <!--  -->
+  <br />
   {{ form.street_address_line_two.label }} {{ form.street_address_line_two() }}
   <!--  -->
+  <br />
   {{ form.city.label }} {{ form.city() }}
   <!--  -->
+  <br />
   {{ form.state.label }} {{ form.state() }}
   <!--  -->
+  <br />
   {{ form.zip_code.label }} {{ form.zip_code() }}
   <!-- ... -->
+  <br />
   {{ form.timezone.label }} {{ form.timezone() }}
   <!--  -->
+  <br />
   {{ form.submit() }}
   <!--  -->
 </form>

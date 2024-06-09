@@ -397,6 +397,10 @@ abc123
 bruno69@gmail.com
 abc123
 
+whitegold@gmail.com
+abc123
+[user id is "23"]
+
 ARTHUR John HAUSER
 01HA0018990
 Kings
@@ -622,3 +626,128 @@ https://medium.com/@peterkong/comparison-of-python-documentation-generators-6602
 
 use this documentation guide to create basic documentation for the project.
 https://www.sphinx-doc.org/en/master/usage/quickstart.html
+
+
+### 6/9/24 refactor of the `confirm_registration` route
+
+```
+
+@app.route("/confirm_registration", methods=["GET", "POST"])
+def confirm_registration():
+    form = ConfirmRegistrationForm()
+    
+    # Get the role_ids from the session
+    role_ids = session.get("role_ids")
+
+    # Query the Role table to get the id of each role
+    role_id_admin = Role.query.filter_by(name="Admin").first().id
+    role_id_princ = Role.query.filter_by(name="Principal").first().id
+    role_id_trad_notary = Role.query.filter_by(name="Traditional Notary").first().id
+    role_id_e_notary = Role.query.filter_by(name="Electronic Notary").first().id
+
+    # Prepopulate hidden fields based on the role_ids
+    if role_id_princ in role_ids:
+        form.email.data = session.get("email")
+        form.password.data = session.get("password")
+        form.role_id.data = session.get("role_ids")
+        form.full_name.data = session.get("full_name")
+        form.street_address_line_one.data = session.get("street_address_line_one")
+        form.street_address_line_two.data = session.get("street_address_line_two")
+        form.city.data = session.get("city")
+        form.state.data = session.get("state")
+        form.zip_code.data = session.get("zip_code")
+        form.timezone.data = session.get("timezone")
+
+    if role_id_trad_notary in role_ids or role_id_e_notary in role_ids:
+        form.email.data = session.get("email")
+        form.password.data = session.get("password")
+        form.role_id.data = session.get("role_ids")
+        form.full_name.data = session.get("full_name")
+        form.street_address_line_one.data = session.get("street_address_line_one")
+        form.street_address_line_two.data = session.get("street_address_line_two")
+        form.city.data = session.get("city")
+        form.state.data = session.get("state")
+        form.zip_code.data = session.get("zip_code")
+        form.full_name.data = session.get("full_name")
+        form.commission_id.data = session.get("commission_id")
+        form.commissioned_county.data = session.get("commissioned_county")
+        form.commission_start_date.data = session.get("commission_start_date")
+        form.commission_expiration_date.data = session.get("commission_expiration_date")
+        form.commission_type_traditional_or_electronic.data = session.get("commission_type_traditional_or_electronic")
+
+    if role_id_admin in role_ids:
+        form.special_code.data = session.get("special_code")
+    
+    if form.validate_on_submit():
+        user = user_datastore.create_user(
+            email=session["email"], password=session["password"]
+        )
+        # role = Role.query.filter_by(id=session["role_id"]).first()
+        # user_datastore.add_role_to_user(user, role)
+
+        role_ids = session["role_ids"]
+        for role_id in role_ids:
+            role = Role.query.filter_by(id=role_id).first()
+            user_datastore.add_role_to_user(user, role)
+
+        # If special code is in session, assign admin privileges
+        if session.get("special_code") == "swordfish":
+            admin_role = Role.query.filter_by(name="Admin").first()
+            user_datastore.add_role_to_user(user, admin_role)
+
+        # Add user details
+        user_details = UserDetails(
+            user_id=user.id,
+            full_name=session.get("full_name"),
+            street_address_line_one=session.get("street_address_line_one"),
+            street_address_line_two=session.get("street_address_line_two"),
+            city=session.get("city"),
+            state=session.get("state"),
+            zip_code=session.get("zip_code"),
+            timezone=session.get("timezone"),
+        )
+        db.session.add(user_details)
+
+        # If user is a notary, add notary credentials
+        if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
+            notary_credentials = NotaryCredentials(
+                user_id=user.id,
+                commission_holder_name=session.get("commission_holder_name"),
+                commission_number_uid=session.get("commission_number_uid"),
+                commissioned_county=session.get("commissioned_county"),
+                commission_type_traditional_or_electronic=(
+                    "Traditional" if session["role_id"] == 3 else "Electronic"
+                ),
+                term_issue_date=session.get("commission_start_date"),
+                term_expiration_date=session.get("commission_expiration_date"),
+            )
+            db.session.add(notary_credentials)
+
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for("index"))
+
+    # Prepopulate hidden fields with session data
+    form.email.data = session.get("email")
+    form.password.data = session.get("password")
+    form.role_id.data = session.get("role_id")
+    form.full_name.data = session.get("full_name")
+    form.street_address_line_one.data = session.get("street_address_line_one")
+    form.street_address_line_two.data = session.get("street_address_line_two")
+    form.city.data = session.get("city")
+    form.state.data = session.get("state")
+    form.zip_code.data = session.get("zip_code")
+    form.timezone.data = session.get("timezone")
+
+    if session["role_id"] in [3, 4]:  # Traditional Notary or Electronic Notary
+        form.commission_holder_name.data = session.get("commission_holder_name")
+        form.commission_number_uid.data = session.get("commission_number_uid")
+        form.commissioned_county.data = session.get("commissioned_county")
+        form.commission_start_date.data = session.get("commission_start_date")
+        form.commission_expiration_date.data = session.get("commission_expiration_date")
+        form.commission_type_traditional_or_electronic.data = (
+            "Traditional" if session["role_id"] == "3" else "Electronic"
+        )
+
+    return render_template("confirm_registration.html", form=form)
+```

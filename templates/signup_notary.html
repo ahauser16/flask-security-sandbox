@@ -1,3 +1,4 @@
+<!-- signup_notary.html -->
 {% extends 'base.html' %} {% block main_content %}
 
 <h2>Sign Up - Notary</h2>
@@ -12,22 +13,20 @@
   id="notary-auth-form"
 >
   {{ form.hidden_tag() }}
-  <!-- spacer -->
-  {{ form.full_name.label }}{{ form.full_name() }}
-  <!-- spacer -->
-  {{ form.commission_id.label }}{{ form.commission_id() }}
-  <!-- spacer -->
-  {{ form.commissioned_county.label }}{{ form.commissioned_county() }}
-  <!-- spacer -->
-  {{ form.commission_start_date.label }}
-  <!-- spacer -->
-  {{ form.commission_start_date() }}
-  <!-- spacer -->
-  {{ form.commission_expiration_date.label }}
-  <!-- spacer -->
-  {{ form.commission_expiration_date() }}
-  <!-- spacer -->
+  {{ form.csrf_token }}
+  <!--  -->
+  {{ form.full_name.label }}{{ form.full_name() }}<br />
+  <!--  -->
+  {{ form.commission_id.label }}{{ form.commission_id() }}<br />
+  <!--  -->
+  {{ form.commissioned_county.label }}{{ form.commissioned_county() }}<br />
+  <!--  -->
+  {{ form.commission_start_date.label }} {{ form.commission_start_date() }}<br />
+  <!--  -->
+  {{ form.commission_expiration_date.label }} {{
+  form.commission_expiration_date() }}<br />
+  <!--  -->
   {{ form.submit() }}
-  <!-- spacer -->
+  <!--  -->
 </form>
 {% endblock %}
