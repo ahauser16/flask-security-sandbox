@@ -1,7 +1,8 @@
 <!-- confirm_registration.html -->
-
-{% extends 'base.html' %} {% block main_content %}
-<h2>Confirm Your Registration</h2>
+{% extends 'base.html' %}
+<!--  -->
+{% block main_content %}
+<h2>Confirm Your Registration Details</h2>
 
 <form
   action="{{ url_for('confirm_registration') }}"
@@ -12,40 +13,45 @@
   <!--  -->
   {{ form.csrf_token }}
   <!--  -->
-  {{ form.email }}
-  <!--  -->
-  {{ form.password }}
-  <!--  -->
-  {{ form.role }}
-  <!--  -->
-  {{ form.is_admin }}
+  {{ form.submit() }}
 </form>
-<p>Email: {{ session['email'] }}</p>
+<h3>Signup Information</h3>
+<p>Email: {{ signup_form_data['email'] }}</p>
 <p>Roles: {% for role in role_names %} {{ role }} {% endfor %}</p>
 
-<p>Full Name: {{ session['full_name'] }}</p>
+<h3>User Details</h3>
+<p>Full Name: {{ signup_user_details_form_data['full_name'] }}</p>
 <p>
-  Address: {{ session['street_address_line_one'] }} {{
-  session['street_address_line_two'] }}
+  Address: {{ signup_user_details_form_data['street_address_line_one'] }} {{
+  signup_user_details_form_data['street_address_line_two'] }}
 </p>
-<p>City: {{ session['city'] }}</p>
-<p>State: {{ session['state'] }}</p>
-<p>Zip Code: {{ session['zip_code'] }}</p>
-<p>Timezone: {{ session['timezone'] }}</p>
-<!--  -->
+<p>City: {{ signup_user_details_form_data['city'] }}</p>
+<p>State: {{ signup_user_details_form_data['state'] }}</p>
+<p>Zip Code: {{ signup_user_details_form_data['zip_code'] }}</p>
+<p>Timezone: {{ signup_user_details_form_data['timezone'] }}</p>
+
 {% if 'Admin' in role_names %}
+<h3>Admin Details</h3>
 <p>Your Administrator access is pending approval</p>
 {% endif %}
-<!-- spacer -->
+<!--  -->
 {% if 'Traditional Notary' in role_names or 'Electronic Notary' in role_names %}
-<p>Commission Holder Name: {{ session['commission_holder_name'] }}</p>
-<p>Commission Number/UID: {{ session['commission_number_uid'] }}</p>
-<p>Commissioned County: {{ session['commissioned_county'] }}</p>
-<p>Commission Start Date: {{ session['commission_start_date'] }}</p>
-<p>Commission Expiration Date: {{ session['commission_expiration_date'] }}</p>
+<h3>Notary Details</h3>
 <p>
-  Commission Type: {{ session['commission_type_traditional_or_electronic'] }}
+  Commission Holder Name: {{ notary_cred_api_resp['commission_holder_name'] }}
+</p>
+<p>
+  Commission Number/UID: {{ notary_cred_api_resp['commission_number_uid'] }}
+</p>
+<p>Commissioned County: {{ notary_cred_api_resp['commissioned_county'] }}</p>
+<p>Commission Start Date: {{ notary_cred_api_resp['term_issue_date'] }}</p>
+<p>
+  Commission Expiration Date: {{ notary_cred_api_resp['term_expiration_date'] }}
+</p>
+<p>
+  Commission Type: {{
+  notary_cred_api_resp['commission_type_traditional_or_electronic'] }}
 </p>
 {% endif %}
-<!-- spacer -->
-{{ form.submit() }} {% endblock %}
+<!--  -->
+{% endblock %}

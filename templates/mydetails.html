@@ -1,4 +1,5 @@
 <!-- mydetails.html -->
+
 {% extends 'base.html' %}
 <!-- spacer -->
 {% block main_content %}
@@ -33,10 +34,14 @@
 <p>{{current_user.notary_credentials.commissioned_county }}</p>
 
 <b>Commission Start Date:</b>
-<p>{{current_user.notary_credentials.term_issue_date.strftime('%m/%d/%Y') }}</p>
+<p>{{term_issue_date}}</p>
 
 <b>Commission Expiration Date:</b>
+<p>{{term_expiration_date}}</p>
+
+<b>Commissioned Type:</b>
 <p>
-  {{current_user.notary_credentials.term_expiration_date.strftime('%m/%d/%Y') }}
+  {{current_user.notary_credentials.commission_type_traditional_or_electronic }}
 </p>
+
 {% endblock %}

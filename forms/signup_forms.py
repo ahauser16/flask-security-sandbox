@@ -125,8 +125,4 @@ class SignupAdminForm(FlaskForm):
 
 
 class ConfirmRegistrationForm(FlaskForm):
-    email = HiddenField()
-    password = HiddenField()
-    role = HiddenField()
-    is_admin = HiddenField()
     submit = SubmitField("Confirm Registration")
