@@ -1,0 +1,54 @@
+<!-- signin.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign In{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="sign-in">
+  <h2 id="sign-in">Sign in</h2>
+  <!-- Show only if user is logged in -->
+  {% if current_user.is_authenticated %}
+  <!--  -->
+  <b>You are already logged in.</b>
+  <!-- Show if user is NOT logged in -->
+  {% else %}
+  <!-- msg that was passed while rendering template -->
+  {{ msg }}<br />
+
+  <form action="#" method="POST" id="signin-form">
+    <fieldset>
+      <legend>Enter your credentials</legend>
+      {{ form.hidden_tag() }} {{ form.csrf_token }}<br />
+      <!--  -->
+      {{ form.email.label }}{{ form.email() }} {% if form.email.errors %}
+      <br />
+      <ul>
+        {% for error in form.email.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <br />
+      <!--  -->
+      {{ form.password.label }} {{ form.password() }}
+      <br />
+      {{ form.submit() }}
+      <!--         -->
+      {% if form.email.errors %}
+      <!-- this error handler works -->
+      <ul>
+        {% for error in form.email.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %} <br />
+    </fieldset>
+  </form>
+  <section>
+    <b>Don't have an account?</b>
+    <a href="/signup">Sign up</a>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

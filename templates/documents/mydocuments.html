@@ -1,0 +1,114 @@
+<!-- mydocuments.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+{% from "macros/form_macros.html" import render_delete_document_form %}
+<!--  -->
+{% from "macros/document_macros.html" import render_document_info %}
+<!-- END of MACRO import -->
+{% block head_title %} - My Documents{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<!--  -->
+<section aria-labelledby="my-documents">
+  <h2 id="my-documents">My Documents</h2>
+  <button
+    onclick="location.href='{{ url_for('upload_document') }}'"
+    aria-label="Upload Document"
+  >
+    Upload Document
+  </button>
+
+  <section aria-labelledby="principal-docs">
+    <h3 id="principal-docs">My Principal Documents</h3>
+    <ul class="principal_doc_list">
+      {% for document in documents %}
+      <!--  -->
+      {% if 'Principal' in document.document_roles|map(attribute='name')|list %}
+      <li>
+        <a
+          href="{{ url_for('view_document', document_id=document.id) }}"
+          aria-label="View {{ document.filename }}"
+          >{{ document.filename }}</a
+        >
+        <!-- macro that adds delete button -->
+        {{ render_delete_document_form(form=delete_document_form,
+        document_id=document.id) }}
+        <!-- macro that adds document info -->
+        {{ render_document_info(document) }}
+      </li>
+      {% endif %}
+      <!--  -->
+      {% endfor %}
+      <!-- if no documents then display info to user -->
+      {% if not documents | selectattr('document_roles', 'map',
+      attribute='name') | select('in', ['Traditional Notary', 'Electronic
+      Notary']) | list %}
+      <em>No Notary documents available.</em>
+      {% endif %}
+    </ul>
+  </section>
+
+  <section aria-labelledby="notary-docs">
+    <h3 id="notary-docs">My Notary Documents</h3>
+    <ul class="notary_doc_list">
+      {% for document in documents %}
+      <!--  -->
+      {% if 'Traditional Notary' in
+      document.document_roles|map(attribute='name')|list or 'Electronic Notary'
+      in document.document_roles|map(attribute='name')|list %}
+      <li>
+        <a
+          href="{{ url_for('view_document', document_id=document.id) }}"
+          aria-label="View {{ document.filename }}"
+          >{{ document.filename }}</a
+        >
+        <!-- macro that adds delete button -->
+        {{ render_delete_document_form(form=delete_document_form,
+        document_id=document.id) }}
+        <!-- macro that adds document info -->
+        {{ render_document_info(document) }}
+      </li>
+      {% endif %}
+      <!--  -->
+      {% endfor %}
+      <!-- if no documents then display info to user -->
+      {% if not documents | selectattr('document_roles', 'map',
+      attribute='name') | select('in', ['Traditional Notary', 'Electronic
+      Notary']) | list %}
+      <em>No Notary documents available.</em>
+      {% endif %}
+    </ul>
+  </section>
+
+  <section aria-labelledby="admin-docs">
+    <h3 id="admin-docs">My Admin Documents</h3>
+    <ul class="admin_doc_list">
+      {% for document in documents %}
+      <!--  -->
+      {% if 'Admin' in document.document_roles|map(attribute='name')|list %}
+      <li>
+        <a
+          href="{{ url_for('view_document', document_id=document.id) }}"
+          aria-label="View {{ document.filename }}"
+        >
+          {{ document.filename }}
+        </a>
+        <!-- macro that adds delete button -->
+        {{ render_delete_document_form(form=delete_document_form,
+        document_id=document.id) }}
+        <!-- macro that adds document info -->
+        {{ render_document_info(document) }}
+      </li>
+      {% endif %}
+      <!--  -->
+      {% endfor %}
+      <!-- if no documents then display info to user -->
+      {% if not documents | selectattr('document_roles', 'map',
+      attribute='name') | select('in', 'Admin') | list %}
+      <em>No Admin documents available.</em>
+      {% endif %}
+    </ul>
+  </section>
+</section>
+<!-- END of the block main_content -->
+{% endblock %}

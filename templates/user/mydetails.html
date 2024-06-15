@@ -1,0 +1,48 @@
+<!-- mydetails.html -->
+{% extends 'index.html' %} {% block head_title %} - My Details{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section>
+  <h2>My Details</h2>
+  <br />
+  <b>My email:</b>
+  <p>{{current_user.email}}</p>
+  <b>Role:</b> {% for role in current_user.roles%}
+  <p>{{role.name}}</p>
+  {% endfor %}
+  <br />
+  <b>Full Name:</b>
+  <p>{{current_user.user_details.full_name }}</p>
+
+  <b>Address:</b>
+  <p>{{current_user.user_details.street_address_line_one }}</p>
+  <p>{{current_user.user_details.street_address_line_two }}</p>
+  <p>
+    {{current_user.user_details.city }}, {{current_user.user_details.state }}
+    {{current_user.user_details.zip_code }}
+  </p>
+  <b>Timezone:</b>
+  <p>{{current_user.user_details.timezone }}</p>
+  <br />
+  <b>Commission Holder Name:</b>
+  <p>{{current_user.notary_credentials.commission_holder_name }}</p>
+
+  <b>Commission ID:</b>
+  <p>{{current_user.notary_credentials.commission_number_uid }}</p>
+
+  <b>Commissioned County:</b>
+  <p>{{current_user.notary_credentials.commissioned_county }}</p>
+
+  <b>Commission Start Date:</b>
+  <p>{{term_issue_date}}</p>
+
+  <b>Commission Expiration Date:</b>
+  <p>{{term_expiration_date}}</p>
+
+  <b>Commissioned Type:</b>
+  <p>
+    {{current_user.notary_credentials.commission_type_traditional_or_electronic
+    }}
+  </p>
+</section>
+{% endblock %}

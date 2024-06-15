@@ -3,7 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>eNotaryNYServices</title>
+    <!-- 
+    Base title block.This can be overridden in child templates to provide a specific page title. 
+    -->
+
+    <title>Notarious{% block head_title %}{% endblock %}</title>
+    <!-- 
+    Linking to main stylesheets. 
+    Add more specific stylesheets in child templates using the `base_head_content` block. 
+    -->
 
     <link
       rel="stylesheet"
@@ -13,12 +21,26 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='header.css') }}"
     />
-    {% block base_head_content %}{% endblock %}
+    {% block base_head_content %}
+    <!--       -->
+    {% endblock %}
   </head>
   <body>
-    {% include 'header.html' %}
+    <!-- 
+    Include the header template. 
+    This header is consistent across all pages that extend this base template. 
+    -->
+    {% include 'partials/header.html' %}
+    <!-- 
+    Main content block. 
+    Child templates should override this block to provide the main content of the page. 
+    -->
     <main class="container">
       {% block main_content %}{% endblock %}
+      <!-- 
+      Example section to display welcome message and application information. 
+      This section is included in the base template and can be removed or overridden in child templates if not needed. 
+      -->
       <section>
         <h2>Welcome to Notarious</h2>
         <p>
@@ -53,26 +75,17 @@
         </ul>
       </section>
     </main>
-    {% include 'footer.html' %}
+    <!-- 
+    Include the footer template. 
+    This footer is consistent across all pages that extend this base template. 
+    -->
+    {% include 'partials/footer.html' %}
+    <!-- 
+    Inline JavaScript for navigation toggle. 
+    You can add more specific scripts in child templates using the `base_end_of_body_scripts` block. 
+    -->
 
-    <script>
-      var navToggle = document.getElementById("nav-toggle");
-      var nav = document.getElementById("nav");
-
-      navToggle.onclick = function () {
-        if (navToggle.classList.contains("nav-toggle--open")) {
-          navToggle.classList.remove("nav-toggle--open");
-        } else {
-          navToggle.classList.add("nav-toggle--open");
-        }
-
-        if (nav.classList.contains("nav--visible")) {
-          nav.classList.remove("nav--visible");
-        } else {
-          nav.classList.add("nav--visible");
-        }
-      };
-    </script>
+    <script src="{{ url_for('static', filename='js/navToggle.js') }}"></script>
     {% block base_end_of_body_scripts %}{% endblock %}
   </body>
 </html>

@@ -1,0 +1,49 @@
+<!-- signup_user_details.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign Up - User Details{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="user-details-sign-up">
+  <h2 id="user-details-sign-up">Sign Up - User Details</h2>
+  <!-- check if user is already logged in -->
+  {% if current_user.is_authenticated %} You are already logged in. {% else %}
+  <!--   -->
+  {{ msg }}
+  <br />
+  <form
+    action="{{ url_for('signup_user_details') }}"
+    method="POST"
+    id="user-details-form"
+  >
+    <fieldset>
+      <legend>Enter your details</legend>
+      {{ form.hidden_tag() }} {{ form.csrf_token }}
+      <!--  -->
+      {{ form.full_name.label }} {{ form.full_name() }}
+      <br />
+      {{ form.street_address_line_one.label }} {{ form.street_address_line_one()
+      }}
+      <br />
+      {{ form.street_address_line_two.label }} {{ form.street_address_line_two()
+      }}
+      <br />
+      {{ form.city.label }} {{ form.city() }}
+      <br />
+      {{ form.state.label }} {{ form.state() }}
+      <br />
+      {{ form.zip_code.label }} {{ form.zip_code() }}
+      <br />
+      {{ form.timezone.label }} {{ form.timezone() }}
+      <br />
+      {{ form.submit() }}
+      <!-- show form errors here -->
+      {% if form.errors %}
+      <p>{{ form.errors }}</p>
+      {% endif %}
+    </fieldset>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!-- electronicnotaries.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Electronic Notaries{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<!--  -->
+<section aria-labelledby="electronic-notaries">
+  <h3 id="electronic-notaries">Electronic Notaries</h3>
+  <ol>
+    {% for e_notary in e_notaries %}
+    <li>{{e_notary}}</li>
+    {% endfor %}
+  </ol>
+</section>
+
+<!-- END of the block main_content -->
+{% endblock %}

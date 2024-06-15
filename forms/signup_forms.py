@@ -32,6 +32,12 @@ class SignupForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
+class SigninForm(FlaskForm):
+    email = StringField("Email Address", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
+
 class UserDetailsForm(FlaskForm):
     full_name = StringField("Full Name", validators=[DataRequired()])
     street_address_line_one = StringField(

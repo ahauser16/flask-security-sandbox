@@ -1,4 +1,8 @@
-{% extends 'base.html' %}
+<!-- findnotary.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Find a Notary{% endblock %}
 <!--   -->
 {% block base_head_content %}
 <link
@@ -8,10 +12,11 @@
 {% endblock %}
 <!--   -->
 {% block main_content %}
-
-<h1>Connect with a notary - Table</h1>
-<hr />
-<div id="table"></div>
+<section>
+  <h2>Find a notary</h2>
+  <hr />
+  <div id="table"></div>
+</section>
 {% endblock %}
 <!--   -->
 {% block base_end_of_body_scripts %}

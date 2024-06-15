@@ -1,0 +1,35 @@
+<!-- signup_admin.html -->
+{% extends "index.html" %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign Up - Admin Credentials{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="admin-sign-up">
+  <h2 id="admin-sign-up">Signup - Administrator</h2>
+  <!-- check if user is already logged in -->
+  {% if current_user.is_authenticated %} You are already logged in. {% else %}
+  <!--   -->
+  {{ msg }}
+  <br />
+  <form
+    method="POST"
+    action="{{ url_for('signup_admin') }}"
+    id="admin-auth-form"
+  >
+    <fieldset>
+      <legend>Enter your passphrase</legend>
+      {{ form.hidden_tag() }} {{ form.csrf_token }}
+      <!--  -->
+      {{ form.special_code.label }}{{ form.special_code() }}
+      <br />
+      {{ form.submit() }}
+      <!-- show form errors here -->
+      {% if form.errors %}
+      <p>{{ form.errors }}</p>
+      {% endif %}
+    </fieldset>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

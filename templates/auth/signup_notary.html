@@ -1,0 +1,44 @@
+<!-- signup_notary.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign Up - Notary Credentials{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="notary-sign-up">
+  <h2 id="notary-sign-up">Sign Up - Notary</h2>
+  <!-- check if user is already logged in -->
+  {% if current_user.is_authenticated %} You are already logged in. {% else %}
+  <!--   -->
+  {{ msg }}
+  <br />
+  <form
+    method="POST"
+    action="{{ url_for('signup_notary') }}"
+    id="notary-auth-form"
+  >
+    <fieldset>
+      <legend>Enter your credentials</legend>
+      {{ form.hidden_tag() }} {{ form.csrf_token }}
+      <!--  -->
+      {{ form.full_name.label }}{{ form.full_name() }}
+      <br />
+      {{ form.commission_id.label }}{{ form.commission_id() }}
+      <br />
+      {{ form.commissioned_county.label }}{{ form.commissioned_county() }}
+      <br />
+      {{ form.commission_start_date.label }} {{ form.commission_start_date() }}
+      <br />
+      {{ form.commission_expiration_date.label }} {{
+      form.commission_expiration_date() }}
+      <br />
+      {{ form.submit() }}
+      <!-- show form errors here -->
+      {% if form.errors %}
+      <p>{{ form.errors }}</p>
+      {% endif %}
+    </fieldset>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

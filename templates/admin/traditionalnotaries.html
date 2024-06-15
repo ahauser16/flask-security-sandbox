@@ -1,0 +1,18 @@
+<!-- traditionalnotaries.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Traditional Notaries{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<!--  -->
+<section aria-labelledby="traditional-notaries">
+  <h3 id="traditional-notaries">Traditional Notaries</h3>
+  <ol>
+    {% for trad_notary in trad_notaries %}
+    <li>{{trad_notary}}</li>
+    {% endfor %}
+  </ol>
+</section>
+<!-- END of the block main_content -->
+{% endblock %}

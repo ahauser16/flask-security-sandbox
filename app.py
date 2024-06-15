@@ -42,6 +42,7 @@ from forms.signup_forms import (
     SignupNotaryForm,
     ConfirmRegistrationForm,
     UserDetailsForm,
+    SigninForm,
 )
 from forms.logbook_forms import NotarialActForm
 from forms.document_forms import UploadDocumentForm, DeleteDocumentForm
@@ -286,7 +287,7 @@ class NotarialAct(db.Model):
 
 @app.route("/")
 def index():
-    return render_template("base.html")
+    return render_template("index.html")
 
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -317,7 +318,7 @@ def signup():
         session["signup_form_data"] = signup_form_data
         logging.info(f"signup_form_data: {signup_form_data}")
         return redirect(url_for("signup_user_details"))
-    return render_template("signup.html", form=form)
+    return render_template("auth/signup.html", form=form)
 
 
 @app.route("/signup_user_details", methods=["GET", "POST"])
@@ -363,7 +364,7 @@ def signup_user_details():
         else:
             return redirect(url_for("throw_error"))
 
-    return render_template("signup_user_details.html", form=form)
+    return render_template("auth/signup_user_details.html", form=form)
 
 
 def has_roles(role_ids, roles, role_names):
@@ -424,7 +425,7 @@ def signup_notary():
         else:
             return redirect(url_for("throw_error"))
 
-    return render_template("signup_notary.html", form=form)
+    return render_template("auth/signup_notary.html", form=form)
 
 
 @app.route("/signup_admin", methods=["GET", "POST"])
@@ -434,7 +435,7 @@ def signup_admin():
         session["special_code"] = form.special_code.data
         return redirect(url_for("confirm_registration"))
 
-    return render_template("signup_admin.html", form=form)
+    return render_template("auth/signup_admin.html", form=form)
 
 
 @app.route("/confirm_registration", methods=["GET", "POST"])
@@ -556,7 +557,7 @@ def confirm_registration():
     # This block logs that the "confirm_registration.html" template is being rendered, and renders the template, passing the form and various pieces of data to the template. This allows the template to generate HTML that represents the form and includes the data.
     logging.info("Rendering confirm_registration.html template")
     return render_template(
-        "confirm_registration.html",
+        "auth/confirm_registration.html",
         form=form,
         role_names=session_role_names,
         signup_form_data=signup_form_data,
@@ -567,20 +568,19 @@ def confirm_registration():
 
 @app.route("/signin", methods=["GET", "POST"])
 def signin():
+    form = SigninForm()
     msg = ""
-    if request.method == "POST":
-        user = User.query.filter_by(email=request.form["email"]).first()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
         if user:
-            if utils.verify_and_update_password(request.form["password"], user):
+            if utils.verify_and_update_password(form.password.data, user):
                 login_user(user)
                 return redirect(url_for("index"))
             else:
                 msg = "Wrong password"
         else:
             msg = "User doesn't exist"
-        return render_template("signin.html", msg=msg)
-    else:
-        return render_template("signin.html", msg=msg)
+    return render_template("auth/signin.html", form=form, msg=msg)
 
 
 ############################## notary logbook related routes below
@@ -589,7 +589,7 @@ def signin():
 @app.route("/notarylogbook")
 @roles_accepted("Admin", "Traditional Notary", "Electronic Notary")
 def notarylogbook():
-    return render_template("mynotarylogbook.html")
+    return render_template("notarylogbook/mynotarylogbook.html")
 
 
 @app.route("/notary_log_entry", methods=["GET", "POST"])
@@ -606,7 +606,9 @@ def notary_log_entry():
         db.session.commit()
         return redirect(url_for("notarylogbook"))
     return render_template(
-        "notary_log_entry_form.html", form=form, action=url_for("notary_log_entry")
+        "notarylogbook/notary_log_entry_form.html",
+        form=form,
+        action=url_for("notary_log_entry"),
     )
 
 
@@ -748,7 +750,7 @@ def principals():
     for principal in role_principals:
         user = User.query.filter_by(id=principal.user_id).first()
         principals.append(user.email)
-    return render_template("principals.html", principals=principals)
+    return render_template("admin/principals.html", principals=principals)
 
 
 @app.route("/trad_notaries")
@@ -759,7 +761,9 @@ def trad_notaries():
     for trad_notary in role_trad_notaries:
         user = User.query.filter_by(id=trad_notary.user_id).first()
         trad_notaries.append(user.email)
-    return render_template("traditionalnotaries.html", trad_notaries=trad_notaries)
+    return render_template(
+        "admin/traditionalnotaries.html", trad_notaries=trad_notaries
+    )
 
 
 @app.route("/e_notaries")
@@ -770,7 +774,7 @@ def e_notaries():
     for e_notary in role_e_notaries:
         user = User.query.filter_by(id=e_notary.user_id).first()
         e_notaries.append(user.email)
-    return render_template("electronicnotaries.html", e_notaries=e_notaries)
+    return render_template("admin/electronicnotaries.html", e_notaries=e_notaries)
 
 
 @app.route("/mydetails")
@@ -788,7 +792,7 @@ def mydetails():
         term_expiration_date = None
 
     return render_template(
-        "mydetails.html",
+        "user/mydetails.html",
         term_issue_date=term_issue_date,
         term_expiration_date=term_expiration_date,
     )
@@ -804,7 +808,7 @@ def mydocuments():
     documents = PDFDocument.query.filter_by(user_id=current_user.id).all()
     delete_document_form = DeleteDocumentForm()
     return render_template(
-        "mydocuments.html",
+        "documents/mydocuments.html",
         documents=documents,
         delete_document_form=delete_document_form,
     )
@@ -846,7 +850,7 @@ def upload_document():
 
         return redirect(url_for("mydocuments"))
 
-    return render_template("upload_document.html", form=form)
+    return render_template("documents/upload_document.html", form=form)
 
 
 @app.route("/download_document/<int:document_id>")
@@ -896,7 +900,7 @@ def view_document(document_id):
         abort(404)  # Not found
 
     # Render the view_document.html template
-    return render_template("view_document.html", document=document)
+    return render_template("documents/view_document.html", document=document)
 
 
 ###############################
@@ -905,24 +909,24 @@ def view_document(document_id):
 @app.route("/findnotary")
 # @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def findnotary():
-    return render_template("findnotary.html")
+    return render_template("findnotary/findnotary.html")
 
 
 @app.route("/resourcecenter")
 # @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def resourcecenter():
-    return render_template("resourcecenter.html")
+    return render_template("resourcecenter/resourcecenter.html")
 
 
 @app.route("/myesignature")
 @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
 def myesignature():
-    return render_template("myesignature.html")
+    return render_template("esignatures/myesignature.html")
 
 
 @app.route("/throw_error")
 def throw_error():
-    return render_template("throw_error.html")
+    return render_template("errorhandling/throw_error.html")
 
 
 if __name__ == "__main__":

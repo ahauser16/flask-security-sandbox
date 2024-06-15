@@ -1,0 +1,40 @@
+<!-- signup_principal.html -->
+<h2>Sign Up - Principal</h2>
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign Up Principal{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="sign-up-principal">
+  <form method="POST" id="sign-up-principal">
+    <fieldset>
+      <legend>Enter your details</legend>
+      {{ form.hidden_tag() }}
+
+      <label>{{ form.first_name.label }}</label>
+      {{ form.first_name }}<br />
+
+      <label>{{ form.last_name.label }}</label>
+      {{ form.last_name }}<br />
+
+      <label>{{ form.street_addr_line_one.label }}</label>
+      {{ form.street_addr_line_one }}<br />
+
+      <label>{{ form.street_addr_line_two.label }}</label>
+      {{ form.street_addr_line_two }}<br />
+
+      <label>{{ form.street_addr_city.label }}</label>
+      {{ form.street_addr_city }}<br />
+
+      <label>{{ form.street_addr_state.label }}</label>
+      {{ form.street_addr_state }}<br />
+
+      <label>{{ form.street_addr_zip_code.label }}</label>
+      {{ form.street_addr_zip_code }}<br />
+
+      {{ form.submit }}
+    </fieldset>
+  </form>
+</section>
+{% endblock %}

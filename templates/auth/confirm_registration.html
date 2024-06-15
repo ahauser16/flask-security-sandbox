@@ -1,0 +1,81 @@
+<!-- confirm_registration.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Confirm Registration{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="confirm-registration">
+  <!-- check if user is already logged in -->
+  {% if current_user.is_authenticated %} You are already logged in. {% else %}
+  <!--   -->
+  {{ msg }}
+  <br />
+  <form
+    action="{{ url_for('confirm_registration') }}"
+    method="POST"
+    id="confirm-registration-form"
+  >
+    <fieldset>
+      <legend>Confirm Your Registration Details</legend>
+      {{ form.hidden_tag() }}
+      <!--  -->
+      {{ form.csrf_token }}
+      <!--  -->
+      {{ form.submit() }}
+    </fieldset>
+  </form>
+  <section aria-labelledby="signup-registration-details">
+    <h3 id="signup-registration-details">Signup Information</h3>
+    <p>Email: {{ signup_form_data['email'] }}</p>
+    <p>Roles: {% for role in role_names %} {{ role }} {% endfor %}</p>
+  </section>
+  <section aria-labelledby="signup-user-registration-details">
+    <h3 id="signup-user-registration-details">User Details</h3>
+    <p>Full Name: {{ signup_user_details_form_data['full_name'] }}</p>
+    <p>
+      Address: {{ signup_user_details_form_data['street_address_line_one'] }} {{
+      signup_user_details_form_data['street_address_line_two'] }}
+    </p>
+    <p>City: {{ signup_user_details_form_data['city'] }}</p>
+    <p>State: {{ signup_user_details_form_data['state'] }}</p>
+    <p>Zip Code: {{ signup_user_details_form_data['zip_code'] }}</p>
+    <p>Timezone: {{ signup_user_details_form_data['timezone'] }}</p>
+  </section>
+
+  {% if 'Admin' in role_names %}
+  <section aria-labelledby="admin-registration-details">
+    <h3 id="admin-registration-details">Admin Details</h3>
+    <p>Your Administrator access is pending approval</p>
+  </section>
+  {% endif %}
+  <!--  -->
+  {% if 'Traditional Notary' in role_names or 'Electronic Notary' in role_names
+  %}
+  <section aria-labelledby="notary-registration-details">
+    <h3 id="notary-registration-details">Notary Details</h3>
+    <p>
+      Commission Holder Name: {{ notary_cred_api_resp['commission_holder_name']
+      }}
+    </p>
+    <p>
+      Commission Number/UID: {{ notary_cred_api_resp['commission_number_uid'] }}
+    </p>
+    <p>
+      Commissioned County: {{ notary_cred_api_resp['commissioned_county'] }}
+    </p>
+    <p>Commission Start Date: {{ notary_cred_api_resp['term_issue_date'] }}</p>
+    <p>
+      Commission Expiration Date: {{
+      notary_cred_api_resp['term_expiration_date'] }}
+    </p>
+    <p>
+      Commission Type: {{
+      notary_cred_api_resp['commission_type_traditional_or_electronic'] }}
+    </p>
+  </section>
+  {% endif %}
+  <!--   -->
+  {% endif %}
+</section>
+{% endblock %}

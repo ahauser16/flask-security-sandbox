@@ -1,0 +1,63 @@
+<!-- resourcecenter.html -->
+{% extends 'index.html' %}
+<!-- -->
+{% block base_head_content %}
+<link
+  href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
+  rel="stylesheet"
+/>
+<!-- placeholder for PDF viewer package -->
+{% endblock %} {% block head_title %} - Resource Center{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="resource-center">
+  <h2 id="resource-center">Resource Center</h2>
+  <br />
+
+  <section aria-labelledby="admin-content">
+    <h3 id="admin-content">Admin Content</h3>
+    <ul class="nav__list">
+      <li class="nav__item">
+        <a href="#" class="nav__link__body">Link One</a>
+        <br />
+        <a href="#" class="nav__link__body">Link One</a>
+        <br />
+        <a href="#" class="nav__link__body">Link One</a>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="notary-content">
+    <h3 id="notary-content">Notary Content</h3>
+    <ul class="nav__list">
+      <li class="nav__item">
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="principal-content">
+    <h3 id="principal-content">Principal Content</h3>
+    <ul class="nav__list">
+      <li class="nav__item">
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="public-content">
+    <h3 id="public-content">Public Content</h3>
+    <ul class="nav__list">
+      <li class="nav__item">
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a><br />
+        <a href="#" class="nav__link__body">Link One</a>
+      </li>
+    </ul>
+  </section>
+</section>
+{% endblock %}

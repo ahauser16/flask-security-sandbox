@@ -1,0 +1,49 @@
+<!-- signup.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Sign Up{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="sign-up">
+  <h2 id="sign-up">Sign Up</h2>
+  <!-- check if user is already logged in -->
+  {% if current_user.is_authenticated %} You are already logged in. {% else %}
+  {{ msg }}
+  <br />
+  <form action="#" method="POST" id="signup-form">
+    <fieldset>
+      <legend>Enter your email, password and role</legend>
+      {{ form.hidden_tag() }} {{ form.csrf_token }}
+      <!--  -->
+      {{ form.email.label }}{{ form.email() }}
+      <br />
+      {{ form.password.label }} {{ form.password() }}
+      <br />
+      {{ form.role.label }}
+      <br />
+      {% for value, label in form.role.choices %}
+      <input type="radio" name="role" value="{{ value }}" />{{ label }} {%
+      endfor %}
+      <br />
+      {{ form.is_admin.label }} {{ form.is_admin() }}
+      <br />
+      {{ form.submit() }}
+      <!--         -->
+      {% if form.email.errors %}
+      <!-- this error handler works -->
+      <ul>
+        {% for error in form.email.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </fieldset>
+  </form>
+  <section>
+    <b>Already have an account?</b>
+    <a href="/signin">Sign in</a>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

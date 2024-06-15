@@ -1,0 +1,21 @@
+<!-- principals.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - Principals{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<!--  -->
+<section aria-labelledby="principals">
+<h3 id="principals">Principals (Regular Users)</h3>
+
+<!-- list that shows all principals' email -->
+<ol>
+  {% for principal in principals %}
+  <li>{{principal}}</li>
+  {% endfor %}
+</ol>
+</section>
+
+<!-- END of the block main_content -->
+{% endblock %}

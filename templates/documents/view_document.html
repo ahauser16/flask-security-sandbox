@@ -1,0 +1,20 @@
+<!-- view_document.html -->
+{% extends 'index.html' %}
+<!-- START of MACRO import -->
+<!-- END of MACRO import -->
+{% block head_title %} - View {{ document.filename }}{% endblock %}
+<!-- START of the block main_content -->
+{% block main_content %}
+<section aria-labelledby="view-document">
+    <h2 id="view-document">View Document - {{ document.filename }}</h2>
+    <iframe src="{{ url_for('download_document', document_id=document.id) }}" width="100%" height="500px"></iframe>
+    </iframe>
+</section>
+{% endblock %}
+<!-- spacer  -->
+{% block base_end_of_body_scripts %}
+<script>
+// add scripts here that normally would belong at the end of the <body> tag 
+</script>
+{% endblock %}
+
