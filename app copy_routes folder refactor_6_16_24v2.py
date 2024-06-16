@@ -65,20 +65,15 @@ from models import (
     NotaryCredentials,
     NotarialAct,
 )
-from routes.auth import (
-    signin_bp,
-    signup_bp,
-    signup_user_details_bp,
-    signup_notary_bp,
-    signup_admin_bp,
-    confirm_registration_bp,
-)
+from routes.auth.signin import signin_bp
 
 
-from config import Config
+from api.notary_auth import match_notary_credentials
+
+from config import Config  # Import the Config class
 
 app = Flask(__name__)
-app.config.from_object(Config)
+app.config.from_object(Config)  # Use the Config class for configuration
 
 db.init_app(app)
 
@@ -141,19 +136,313 @@ def create_tables():
 user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
 security = Security(app, user_datastore)
 
-# Attach the user_datastore to the app
-app.user_datastore = user_datastore
-
 app.register_blueprint(signin_bp)
-app.register_blueprint(signup_bp)
-app.register_blueprint(signup_user_details_bp)
-app.register_blueprint(signup_notary_bp)
-app.register_blueprint(signup_admin_bp)
-app.register_blueprint(confirm_registration_bp)
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    form = SignupForm()
+    if form.validate_on_submit():
+        user = User.query.filter(User.email.ilike(form.email.data)).first()
+        if user:
+            flash("User already exists", "error")
+            logging.info("User already exists")
+            return redirect(url_for("signup"))
+
+        role = Role.query.get(int(form.role.data))
+        if not role:
+            flash("Invalid role", "error")
+            logging.info("Invalid role")
+            return redirect(url_for("signup"))
+
+        signup_form_data = {
+            "email": form.email.data,
+            "password": generate_password_hash(form.password.data),
+            "role_ids": [role.id],
+        }
+        if form.is_admin.data:  # Admin ONLY
+            admin_role = Role.query.filter_by(name="Admin").first()
+            if admin_role:
+                signup_form_data["role_ids"].append(admin_role.id)
+        session["signup_form_data"] = signup_form_data
+        logging.info(f"signup_form_data: {signup_form_data}")
+        return redirect(url_for("signup_user_details"))
+    return render_template("auth/signup.html", form=form)
+
+
+@app.route("/signup_user_details", methods=["GET", "POST"])
+def signup_user_details():
+    form = UserDetailsForm()
+    if form.validate_on_submit():
+        # Create a dictionary from the form data and store it in the session
+        # user_details = {
+        signup_user_details_form_data = {
+            "full_name": form.full_name.data,
+            "street_address_line_one": form.street_address_line_one.data,
+            "street_address_line_two": form.street_address_line_two.data,
+            "city": form.city.data,
+            "state": form.state.data,
+            "zip_code": form.zip_code.data,
+            "timezone": form.timezone.data,
+        }
+        session["signup_user_details_form_data"] = signup_user_details_form_data
+        logging.info(f"signup_user_details_form_data: {signup_user_details_form_data}")
+
+        # Get the role_ids from the session
+        signup_form_data = session.get("signup_form_data")
+        role_ids = signup_form_data.get("role_ids") if signup_form_data else None
+        logging.info(f"role_ids retrieved from session: {role_ids}")
+
+        # Query the Role table once and store the results in a dictionary
+        roles = {role.name: role.id for role in Role.query.all()}
+        logging.info(
+            f"role_ids retrieved from the Role table and store them in a dicitonary as: {roles}"
+        )
+
+        # Check the role_ids and redirect accordingly
+        if has_roles(role_ids, roles, ["Admin", "Principal"]):
+            return redirect(url_for("signup_admin"))
+        elif has_roles(role_ids, roles, ["Admin"]) and has_any_role(
+            role_ids, roles, ["Traditional Notary", "Electronic Notary"]
+        ):
+            return redirect(url_for("signup_notary"))
+        elif has_roles(role_ids, roles, ["Principal"]) and len(role_ids) == 1:
+            return redirect(url_for("confirm_registration"))
+        elif (
+            has_any_role(role_ids, roles, ["Traditional Notary", "Electronic Notary"])
+            and len(role_ids) == 1
+        ):
+            return redirect(url_for("signup_notary"))
+        else:
+            return redirect(url_for("throw_error"))
+
+    return render_template("auth/signup_user_details.html", form=form)
+
+
+def has_roles(role_ids, roles, role_names):
+    return all(roles.get(role_name) in role_ids for role_name in role_names)
+
+
+def has_any_role(role_ids, roles, role_names):
+    return any(roles.get(role_name) in role_ids for role_name in role_names)
+
+
+@app.route("/signup_notary", methods=["GET", "POST"])
+def signup_notary():
+    form = SignupNotaryForm()
+
+    if form.validate_on_submit():
+        notary_form_data = {
+            "full_name": form.full_name.data,
+            "commission_id": form.commission_id.data,
+            "commissioned_county": form.commissioned_county.data,
+            "commission_start_date": form.commission_start_date.data.strftime(
+                "%Y-%m-%d"
+            ),
+            "commission_expiration_date": form.commission_expiration_date.data.strftime(
+                "%Y-%m-%d"
+            ),
+        }
+        logging.info(f"notary_form_data: {notary_form_data}")
+        notary_cred_api_resp = match_notary_credentials(notary_form_data)
+        if notary_cred_api_resp is None:
+            flash("No matching data found in the API's database", "danger")
+            logging.info("No matching data found in the API's database")
+            return render_template("signup_notary.html", form=form)
+
+        # Store the form data and API data in the session
+        session["notary_cred_api_resp"] = notary_cred_api_resp
+        logging.info(f"notary_cred_api_resp: {notary_cred_api_resp}")
+
+        # Get the role_ids from the session
+        signup_form_data = session.get("signup_form_data")
+        role_ids = signup_form_data.get("role_ids") if signup_form_data else None
+        logging.info(f"role_ids retrieved from session: {role_ids}")
+
+        # Query the Role table to get the id of each role
+        roles = Role.query.filter(
+            Role.name.in_(["Admin", "Traditional Notary", "Electronic Notary"])
+        ).all()
+        role_ids_dict = {role.name: role.id for role in roles}
+        logging.info(f"role_ids_dict: {role_ids_dict}")
+
+        # Check the role_ids and redirect accordingly
+        if has_roles(role_ids, role_ids_dict, ["Admin"]) and has_any_role(
+            role_ids, role_ids_dict, ["Traditional Notary", "Electronic Notary"]
+        ):
+            return redirect(url_for("signup_admin"))
+        elif has_any_role(
+            role_ids, role_ids_dict, ["Traditional Notary", "Electronic Notary"]
+        ):
+            return redirect(url_for("confirm_registration"))
+        else:
+            return redirect(url_for("throw_error"))
+
+    return render_template("auth/signup_notary.html", form=form)
+
+
+@app.route("/signup_admin", methods=["GET", "POST"])
+def signup_admin():
+    form = SignupAdminForm()
+    if form.validate_on_submit():
+        session["special_code"] = form.special_code.data
+        return redirect(url_for("confirm_registration"))
+
+    return render_template("auth/signup_admin.html", form=form)
+
+
+@app.route("/confirm_registration", methods=["GET", "POST"])
+def confirm_registration():
+    try:
+        logging.info("Entering confirm_registration route")
+
+        # Check if the required session data is available
+        required_keys = ["signup_form_data", "signup_user_details_form_data"]
+        if not all(key in session for key in required_keys):
+            logging.warning("Required session data not available")
+            flash(
+                "Session data is not available. Please start the registration process again."
+            )
+            return redirect(url_for("signup"))
+
+        form = ConfirmRegistrationForm()
+
+        # Get the role_ids from the session
+        role_ids = session["signup_form_data"].get("role_ids", [])
+        logging.info(f"Role IDs from session: {role_ids}")
+
+        # This block queries the database for all roles and creates a dictionary mapping role IDs to role names.
+        roles = Role.query.all()
+        role_ids_dict = {role.id: role.name for role in roles}
+
+        # This block uses the dictionary to map the role IDs from the session data to their names, and logs the role names.
+        session_role_names = [
+            role_ids_dict[role_id] for role_id in role_ids if role_id in role_ids_dict
+        ]
+        logging.info(f"Role names from session: {session_role_names}")
+
+        # This block retrieves various pieces of data from the session and logs the notary credentials API response.
+        signup_form_data = session.get("signup_form_data", {})
+        signup_user_details_form_data = session.get("signup_user_details_form_data", {})
+        notary_cred_api_resp = session.get("notary_cred_api_resp", {})
+
+        logging.info(
+            f"before validation signup_form_data looks like this: {signup_form_data}"
+        )
+        logging.info(
+            f"before validation signup_user_details_form_data looks like this: {signup_user_details_form_data}"
+        )
+        logging.info(
+            f"before validation notary_cred_api_resp looks like this: {notary_cred_api_resp}"
+        )
+
+        # This block formats the issue and expiration dates of the notary credentials.
+        if 3 in role_ids or 4 in role_ids:
+            notary_cred_api_resp["term_issue_date"] = datetime.strftime(
+                notary_cred_api_resp["term_issue_date"], "%m/%d/%Y"
+            )
+            notary_cred_api_resp["term_expiration_date"] = datetime.strftime(
+                notary_cred_api_resp["term_expiration_date"], "%m/%d/%Y"
+            )
+
+        # This line checks if the form has been submitted and is valid, and logs that the form has been validated.
+        if form.validate_on_submit():
+            logging.info("Form validated")
+            # If the form is valid, This block creates a new user with the email and password from the form data, and logs the created user.
+            user = user_datastore.create_user(
+                email=signup_form_data["email"],
+                password=signup_form_data["password"],
+            )
+            logging.info(
+                f"User created: {user}"
+            )  # example of output to log is "User created: <User (pending 139704404004096)>"
+
+            # These lines add the roles associated with the user to the user's record in the database.
+            for role_id in role_ids:
+                role = Role.query.get(role_id)
+                user_datastore.add_role_to_user(user, role)
+            logging.info(
+                f"Roles added to user: {role_ids}"
+            )  # example of output to log is "Roles added to user: [4, 1]"
+
+            db.session.commit()
+
+            # This block creates a new `UserDetails` record for the user and adds it to the database session, and logs the user details.
+            user_details_data = signup_user_details_form_data
+            user_details_data["user_id"] = user.id
+            user_details = UserDetails(**user_details_data)
+            logging.info(
+                f"user_details_data looks like this: {user_details_data}"  # {'city': 'Brooklyn', 'full_name': 'ARTHUR John HAUSER', 'state': 'NY', 'street_address_line_one': '415 East 16th Street', 'street_address_line_two': 'Apartment A8', 'timezone': 'US/Eastern', 'zip_code': '11226', 'user_id': None}
+            )
+
+            db.session.add(user_details)
+            logging.info(
+                f"User details added to session: {user_details}"
+            )  # example of output to log is "User details added to session: <UserDetails (pending 139704404006304)>"
+
+            # This block checks if the user is a notary. If so, it creates a new NotaryCredentials record for the user and adds it to the database session, and logs that the notary credentials have been added.
+            if (
+                "Traditional Notary" in session_role_names
+                or "Electronic Notary" in session_role_names
+            ):
+                notary_credentials_data = notary_cred_api_resp
+                notary_credentials_data["user_id"] = user.id
+                notary_credentials = NotaryCredentials(**notary_credentials_data)
+                db.session.add(notary_credentials)
+                logging.info(
+                    "Notary credentials added to database session as {notary_credentials}"
+                )
+
+            # This line commits the changes to the database. This is when the new user, user details, and notary credentials (if applicable) are actually saved to the database.
+            db.session.commit()
+            logging.info("Changes committed to database")
+
+            # This block logs the user in, logs that the user has been logged in and redirected, and redirects the user to the index page.
+            login_user(user)
+            logging.info("User logged in and redirected to index page")
+            return redirect(url_for("index"))
+
+    # This block catches any exceptions that occur during the registration process, logs the exception, flashes a message to the user, and redirects the user to the signup page.
+    except Exception as e:
+        logging.error(f"An error occurred during registration: {e}")
+        flash("An error occurred. Please try again.")
+        return redirect(url_for("signup"))
+
+    # This block logs that the "confirm_registration.html" template is being rendered, and renders the template, passing the form and various pieces of data to the template. This allows the template to generate HTML that represents the form and includes the data.
+    logging.info("Rendering confirm_registration.html template")
+    return render_template(
+        "auth/confirm_registration.html",
+        form=form,
+        role_names=session_role_names,
+        signup_form_data=signup_form_data,
+        signup_user_details_form_data=signup_user_details_form_data,
+        notary_cred_api_resp=notary_cred_api_resp,
+    )
+
+
+# @app.route("/signin", methods=["GET", "POST"])
+# def signin():
+#     form = SigninForm()
+#     msg = ""
+#     if form.validate_on_submit():
+#         user = User.query.filter_by(email=form.email.data).first()
+#         if user:
+#             if utils.verify_and_update_password(form.password.data, user):
+#                 login_user(user)
+#                 return redirect(url_for("index"))
+#             else:
+#                 msg = "Wrong password"
+#         else:
+#             msg = "User doesn't exist"
+#     return render_template("auth/signin.html", form=form, msg=msg)
+
+
+############################## notary logbook related routes below
 
 
 @app.route("/notarylogbook")

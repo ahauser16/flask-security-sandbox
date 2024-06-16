@@ -16,7 +16,11 @@
   <!-- msg that was passed while rendering template -->
   {{ msg }}<br />
 
-  <form action="#" method="POST" id="signin-form">
+  <form
+    action="{{ url_for('signin.signin_view') }}"
+    method="POST"
+    id="signin-form"
+  >
     <fieldset>
       <legend>Enter your credentials</legend>
       {{ form.hidden_tag() }} {{ form.csrf_token }}<br />

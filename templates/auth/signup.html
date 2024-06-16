@@ -11,7 +11,11 @@
   {% if current_user.is_authenticated %} You are already logged in. {% else %}
   {{ msg }}
   <br />
-  <form action="#" method="POST" id="signup-form">
+  <form
+    action="{{ url_for('signup.signup_view') }}"
+    method="POST"
+    id="signup-form"
+  >
     <fieldset>
       <legend>Enter your email, password and role</legend>
       {{ form.hidden_tag() }} {{ form.csrf_token }}
