@@ -165,9 +165,9 @@ If none of these suggestions solve the issue, you might want to reach out to Goo
 1.  currently working on--> add a notary logbook feature with an editable table for Traditional Notary and Electronic Notary users.
     1.  COMPLETE-->This will require updating the `User` model for registered users who are either Traditional Notaries or Electronic Notaries to include their commission details: `commission_holder_name`, `commission_number_uid`, `commissioned_county`, `commission_type_traditional_or_electronic`, `term_issue_date` and `term_expiration_date`.
     2.  COMPLETE-->UPDATE PSQL `User` MODEL: once a user registers as a notary and successfully authenticates using NYSDOS notary credentials those credentials need to be added to the user's profile in the database.
-    3.  Add editable_logbook.py and editable_logbook.html to the front end.
-    4.  create notary_logbook models for database and join it with the `User` model.
-    5.  Add CRUD operations for logbook
+    3.  Add editable_log.py and editable_log.html to the front end.
+    4.  create notary_log models for database and join it with the `User` model.
+    5.  Add CRUD operations for log
     6.  Add logic that checks if a user has already registered with the notary credentials.
 2.  Add "Forgot Username" and "Forgot Password" feature using flask-security & flask-mailman
 

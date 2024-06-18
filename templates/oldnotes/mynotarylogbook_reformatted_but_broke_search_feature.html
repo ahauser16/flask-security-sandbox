@@ -31,7 +31,7 @@
 <!-- spacer  -->
 {% block main_content %}
 
-<h2>Notary Logbook - Editable Table</h2>
+<h2>Notary Log - Table</h2>
 <button onclick="location.href='/notary_log_entry'">Add Entry</button>
 <hr />
 <div id="table" class="containe row"></div>
@@ -307,7 +307,7 @@
       },
     ],
     server: {
-      url: "/notarial_act_list",
+      url: "/notarial_act_table_data",
       then: (results) => results.data,
       total: (results) => results.total,
     },

@@ -1,0 +1,43 @@
+<!-- notary_log_entry_form.html -->
+{% extends 'index.html' %}
+<!--   -->
+{% block base_head_content %}<style></style>
+{% endblock %}
+<!--   -->
+{% block main_content %}
+<h2>Notary Log - Create an Entry</h2>
+<form
+  {% if id is defined %}
+  action="{{ url_for('notary_log_entry_update.notary_log_entry_update', id=id) }}"
+  {% else %}
+  action="{{ url_for('notary_log_entry_create.notary_log_entry_create') }}"
+  {% endif %}
+  method="post"
+  id="notary-log-entry-form"
+>
+  {{ form.hidden_tag() }}
+  <!--   -->
+  {{ form.date_time.label }} {{ form.date_time }}
+  <!--   -->
+  {{ form.act_type.label }} {{ form.act_type }}<!--   -->
+  {{ form.principal_name.label }} {{ form.principal_name }}<!--   -->
+  {{ form.principal_addressLine1.label }} {{ form.principal_addressLine1 }}<!--   -->
+  {{ form.principal_addressLine2.label }} {{ form.principal_addressLine2 }}<!--   -->
+  {{ form.principal_city.label }} {{ form.principal_city }}<!--   -->
+  {{ form.principal_state.label }} {{ form.principal_state }}<!--   -->
+  {{ form.principal_zipCode.label }} {{ form.principal_zipCode }}<!--   -->
+  {{ form.service_number.label }} {{ form.service_number }}<!--   -->
+  {{ form.service_type.label }} {{ form.service_type }}<!--   -->
+  {{ form.principal_credential_type.label }} {{ form.principal_credential_type
+  }}<!--   -->
+  {{ form.communication_tech.label }} {{ form.communication_tech }}<!--   -->
+  {{ form.certification_authority.label }} {{ form.certification_authority }}<!--   -->
+  {{ form.verification_provider.label }} {{ form.verification_provider }}<!--   -->
+  {{ form.submit }}
+</form>
+
+{% endblock %}
+<!--   -->
+{% block base_end_of_body_scripts %}
+<script></script>
+{% endblock %}

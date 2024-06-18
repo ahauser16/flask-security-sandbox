@@ -1,4 +1,4 @@
-# logbook_forms.py
+# notary_log_forms.py
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField,
@@ -273,3 +273,4 @@ class NotarialActForm(FlaskForm):
         validators=[DataRequired()],
     )
     submit = SubmitField("Submit")
+
