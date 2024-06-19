@@ -1,3 +1,94 @@
+# Notarious
+
+This project is primarily focused on satisfying Springboard's criteria for the Capstone One project with the longterm goal of providing New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in accordance with NYS law. The Capstone One project is a logbook for traditional notaries and electronic notaries to record in-person notarial acts and services. Before being able to use the logbook feature the user must register through an onboarding process that includes providing their Notary Public commission details which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `notary_log` route
+
+## Installation
+
+Provide detailed instructions on how to install your project. For example:
+
+1. pip install -r requirements.txt
+
+2. There is a virtual environment already set up for this project so you need to activate it:
+
+`source venv/bin/activate`
+
+3. In `Flask`, the `FLASK_APP` environment variable is used to specify how to load the application which can be set to a python file, a module, or a package. In this case, it's being set to the `app.py` file which is where my `Flask` application is defined. When you execute the command `flask run`, `Flask` uses the value of `FLASK_APP` to find my application and run it. If `FLASK_APP` is not set, `Flask` won't know where the application is and won't be able to run it. So before you run the application you must run the command:
+
+`export FLASK_APP=app.py`
+
+4. Now you can run the application with the debugger module activated using the command:
+
+`flask run --debugger`
+
+### running the application:
+
+1. There is a virtual environment already set up for this project so you need to activate it:
+
+`source venv/bin/activate`
+
+2. In Flask, the `FLASK_APP` environment variable is used to specify how to load your application. It can be set to a python file, a module, or a package. In this case, it's being set to the `app.py` file, which is presumably where your Flask application is defined.
+
+When you run `flask run`, Flask uses the value of `FLASK_APP` to find your application and run it. If `FLASK_APP` is not set, Flask won't know where your application is and won't be able to run it. So before you run the application you must run the command:
+
+`export FLASK_APP=app.py`
+
+3. Now you can run the application:
+
+`flask run --debugger`
+
+### Google Cloud Services instructions:
+
+This application uses Google Cloud Services and requires authentication via a service account key. Follow these steps to set up the authentication:
+
+Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your service account key file. Replace `/path/to/your/service-account-file.json` with the actual path to your JSON file. You can do this in the terminal with the following command:
+
+`export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"`
+
+### psql and the database:
+
+1. Since this is a Unix-based system you must activate the PostgreSQL service with the command:
+   NB--> be prepared to enter your `psql` password
+
+`sudo service postgresql start`
+
+2. To log in to your PSQL account you must use the `psql` command with the `-U` option followed by your username:
+
+`psql -U your_username`
+
+3. Helpful "general" `psql` commands:
+
+- `\l` : list all your databases.
+- `\c nysdos_notaries_test` : Connect to a specific database.
+- `\dt` : List all tables in the current database.
+- `\d` : table_name: Show the structure of a specific table.
+- `\du` : List all users.
+- `\h` : Get a help on syntax of SQL commands.
+- `\?` : Lists all psql slash commands.
+- `\q` : Quit psql.
+
+4. Helpful `psql` commands to run once you are connected to a database:
+
+- `\dt`: List all tables in the current database.
+- `\d table_name` : Show the structure of a specific table. Replace table_name with the name of the table you want to inspect.
+- `\dn` : List all schemas in the current database.
+- `\df` : List all functions in the current database.
+- `dv` : List all views in the current database.
+- `\x` : Toggle expanded display. This can make the output of some commands easier to read.
+- `\a` : Toggle between unaligned and aligned output mode.
+- `\timing` : Toggle timing of commands. When on, psql will show how long each command takes to execute.
+- `\i filename` : Execute commands from a file. Replace filename with the name of the file you want to execute commands from.
+- `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
+- `\q` : Quit psql.
+
+## my public credentials
+
+ARTHUR John HAUSER
+01HA0018990
+Kings
+Electronic
+12/21/2023
+12/21/2027
+
 this tutorial is from here:
 https://www.geeksforgeeks.org/flask-role-based-access-control/
 
@@ -5,7 +96,7 @@ https://www.geeksforgeeks.org/flask-role-based-access-control/
 
 last commit includes broken code related to the error below:
 
-Google Cloud Services is too complicated to set up at this time but the `/mydocuments` route I was working with is below followed by the error. 
+Google Cloud Services is too complicated to set up at this time but the `/mydocuments` route I was working with is below followed by the error.
 
 ```
 @app.route("/mydocuments", methods=["GET", "POST"])
@@ -57,8 +148,8 @@ def mydocuments():
     return render_template("mydocuments.html", form=form)
 ```
 
-
 error:
+
 ```
 127.0.0.1 - - [04/Jun/2024 19:24:23] "POST /mydocuments HTTP/1.1" 500 -
 Traceback (most recent call last):
@@ -155,210 +246,6 @@ Given that you've already checked your system clock and it's correct, the issue 
 If none of these suggestions solve the issue, you might want to reach out to Google Cloud Support or the community support forums for more help.
 ```
 
-
-
-
-
-
-### ToDos:
-
-1.  currently working on--> add a notary logbook feature with an editable table for Traditional Notary and Electronic Notary users.
-    1.  COMPLETE-->This will require updating the `User` model for registered users who are either Traditional Notaries or Electronic Notaries to include their commission details: `commission_holder_name`, `commission_number_uid`, `commissioned_county`, `commission_type_traditional_or_electronic`, `term_issue_date` and `term_expiration_date`.
-    2.  COMPLETE-->UPDATE PSQL `User` MODEL: once a user registers as a notary and successfully authenticates using NYSDOS notary credentials those credentials need to be added to the user's profile in the database.
-    3.  Add editable_log.py and editable_log.html to the front end.
-    4.  create notary_log models for database and join it with the `User` model.
-    5.  Add CRUD operations for log
-    6.  Add logic that checks if a user has already registered with the notary credentials.
-2.  Add "Forgot Username" and "Forgot Password" feature using flask-security & flask-mailman
-
-### running the application:
-
-1. There is a virtual environment already set up for this project so you need to activate it:
-
-`source venv/bin/activate`
-
-2. In Flask, the `FLASK_APP` environment variable is used to specify how to load your application. It can be set to a python file, a module, or a package. In this case, it's being set to the `app.py` file, which is presumably where your Flask application is defined.
-
-When you run `flask run`, Flask uses the value of `FLASK_APP` to find your application and run it. If `FLASK_APP` is not set, Flask won't know where your application is and won't be able to run it. So before you run the application you must run the command:
-
-`export FLASK_APP=app.py`
-
-3. Now you can run the application:
-
-`flask run --debugger`
-
-### Google Cloud Services instructions:
-
-This application uses Google Cloud Services and requires authentication via a service account key. Follow these steps to set up the authentication:
-
-Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your service account key file. Replace `/path/to/your/service-account-file.json` with the actual path to your JSON file. You can do this in the terminal with the following command:
-
-`export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"`
-
-### psql and the database:
-
-1. Since this is a Unix-based system you must activate the PostgreSQL service with the command:
-   NB--> be prepared to enter your `psql` password
-
-`sudo service postgresql start`
-
-2. To log in to your PSQL account you must use the `psql` command with the `-U` option followed by your username:
-
-`psql -U your_username`
-
-3. Helpful "general" `psql` commands:
-
-- `\l` : list all your databases.
-- `\c nysdos_notaries_test` : Connect to a specific database.
-- `\dt` : List all tables in the current database.
-- `\d` : table_name: Show the structure of a specific table.
-- `\du` : List all users.
-- `\h` : Get a help on syntax of SQL commands.
-- `\?` : Lists all psql slash commands.
-- `\q` : Quit psql.
-
-4. Helpful `psql` commands to run once you are connected to a database:
-
-- `\dt`: List all tables in the current database.
-- `\d table_name` : Show the structure of a specific table. Replace table_name with the name of the table you want to inspect.
-- `\dn` : List all schemas in the current database.
-- `\df` : List all functions in the current database.
-- `dv` : List all views in the current database.
-- `\x` : Toggle expanded display. This can make the output of some commands easier to read.
-- `\a` : Toggle between unaligned and aligned output mode.
-- `\timing` : Toggle timing of commands. When on, psql will show how long each command takes to execute.
-- `\i filename` : Execute commands from a file. Replace filename with the name of the file you want to execute commands from.
-- `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
-- `\q` : Quit psql.
-
-## fake users login credentials
-
-principal user test#2-post notaryauth route refactor on 5-15-24:
-bugs@bunny.com
-abc123
-
-enotary user test#1-post notaryauth route refactor on 5-15-24:
-daffythenotary@disney.com
-abc123
-[created with real notary credentials below]
-
-enotary user test#2-post notaryauth route refactor on 5-15-24:
-baloney@oscar.com
-abc123
-[created with real notary credentials below]
-
-trad_notary user test#1-post notaryauth route refactor on 5-15-24v2(second session):
-
-vladtheimpala@bleh.com
-asdgfadfhassdfgadfh
-CHAK C CHONG
-02CH5009104
-Putnam
-Traditional
-03/08/2023
-03/08/2027
-
-trad_notary user test#2-post notaryauth route refactor on 5-15-24v2(second session):
---> fringe case where the commission id only has 10 characters but is 11 charaters long
-kangelo@aol.com
-abc123
-KAREN M D'ANGELO
-01 D6390284
-Monroe
-Traditional
-04/15/2023
-04/15/2027
-
-trad_notary user test#3-post notaryauth route refactor on 5-15-24v3(second session):
---> fringe case where the commission id only has 10 characters but is 11 charaters long
-gpruno@bruno.com
-abc123
-GRACE PRUNO
-01 P4603811
-Suffolk
-Traditional
-01/31/2023
-01/31/2027
-
-https://data.ny.gov/resource/rwbv-mz6z.json?commission_number_uid=01 P4603811
-
-trad_notary user test#4-post notaryauth route refactor on 5-15-24v3(second session):
---> not a fringe case
-rsharif@aol.com
-abc123
-RASHAD SHARIF
-01SH6313188
-Rockland
-Traditional
-01/20/2023
-01/20/2027
-
-if you go to the data.ny.gov website and search for records that contain a sapce " " using the 'contains' query term you get 236 records that are 11 characters long but only contain 10 characters and a space in the middle of the textstring. Querying these records is problematic from the API perspective and even copying and pasting the commission holder's name in the URL doesn't always work.
-
-e.g. these five GET requests return an empty `[ ]`
-
-`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=GRACE PRUNO`
-
-`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=JOHN A OWENS JR`
-
-`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=CAROL A BLAKE`
-
-`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=KAREN M D'ANGELO`
-
-`https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=MICHELE A GREEN HOSANG`
-
-while `https://data.ny.gov/resource/rwbv-mz6z.json?commission_holder_name=COSTA-TRAHAN CYNTHIA A` returns:
-
-```
-[
-  {
-    "commission_holder_name": "COSTA-TRAHAN CYNTHIA A",
-    "commission_number_uid": "02A 5074644",
-    "business_address_1_if_available": "COSTA & ASSOCIATES",
-    "business_address_2_if_available": "56 N. BROADWAY",
-    "business_city_if_available": "NYACK",
-    "business_state_if_available": "NY",
-    "business_zip_if_available": "10960",
-    "commissioned_county": "Rockland",
-    "commission_type_traditional_or_electronic": "Traditional",
-    "term_issue_date": "2023-05-17T00:00:00.000",
-    "term_expiration_date": "2027-05-17T00:00:00.000",
-    "georeference": {
-      "type": "Point",
-      "coordinates": [
-        -73.9249517,
-        41.0917555
-      ]
-    }
-  }
-]
-```
-
-## my public credentials
-
-use this fake default to log in as "a Principal user"
-NB--> 5/17/24 registration works fine
-
-whitesnake@gmail.com
-abc123
-
-croc@gmail.com
-abc123
-
-bruno69@gmail.com
-abc123
-
-whitegold@gmail.com
-abc123
-[user id is "23"]
-
-ARTHUR John HAUSER
-01HA0018990
-Kings
-Electronic
-12/21/2023
-12/21/2027
-
 ## Debugging notes from issue with `Flask` `session` and `Flask_Security`'s `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`
 
 1. Flask's `session` object: This is a way to store information specific to a user from one request to the next. It's a dictionary-like object that uses a signed cookie to keep the session secure. In your code, you're using the session to store the email, password, and role_id of a user during the signup process. This data is then available to you in subsequent requests, even if they happen in a different route, like `/notaryauth`.
@@ -423,7 +310,6 @@ For example, for the `/login` route, `Flask-Security` will create a view functio
 
 All of this setup is done automatically when you create an instance of the `Security` class and pass in your Flask application and datastore. This saves you the time and effort of having to create these routes, views, and templates yourself.
 
-
 ### notes from call with Mike @ Springboard
 
 https://jsdoc.app/tags-example
@@ -433,4 +319,3 @@ https://medium.com/@peterkong/comparison-of-python-documentation-generators-6602
 
 use this documentation guide to create basic documentation for the project.
 https://www.sphinx-doc.org/en/master/usage/quickstart.html
-

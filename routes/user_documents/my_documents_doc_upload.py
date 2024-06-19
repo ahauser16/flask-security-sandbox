@@ -2,8 +2,7 @@
 from flask import Blueprint, render_template, current_app, redirect, url_for
 from flask_security import roles_accepted, current_user
 from werkzeug.utils import secure_filename
-from models import PDFDocument, DocumentRole
-from models.database import db
+from models import PDFDocument, DocumentRole, db
 from forms import UploadDocumentForm
 import os
 

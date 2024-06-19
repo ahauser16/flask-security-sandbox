@@ -2,51 +2,18 @@
 from flask import (
     Flask,
     render_template,
-    redirect,
-    url_for,
-    request,
-    jsonify,
-    session,
-    abort,
-    flash,
-    current_app,
-    send_file,
-    send_from_directory,
-    flash,
-    get_flashed_messages,
 )
-from flask_sqlalchemy import SQLAlchemy
 from flask_security import (
-    UserMixin,
-    RoleMixin,
     Security,
     SQLAlchemySessionUserDatastore,
-    utils,
     roles_accepted,
 )
-from flask_login import LoginManager, login_manager, login_user, current_user
+from flask_login import current_user
 from flask_migrate import Migrate
-from sqlalchemy import or_, cast, String
 from google.cloud import storage
-import requests
 import logging
-import pytz
 from datetime import datetime
-import urllib.parse
-from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash
-import os
 
-from forms.signup_forms import (
-    SignupForm,
-    SignupAdminForm,
-    SignupNotaryForm,
-    ConfirmRegistrationForm,
-    UserDetailsForm,
-    SigninForm,
-)
-from forms.notary_log_forms import NotarialActForm
-from forms.document_forms import UploadDocumentForm, DeleteDocumentForm
 
 # below is the import statement from the models package after moving the model classes to their own folder
 from models.database import (
@@ -59,14 +26,9 @@ from models import (
     User,
     Role,
     DocumentRole,
-    UserDetails,
-    EmployerDetails,
-    PDFDocument,
-    NotaryCredentials,
-    NotarialAct,
 )
-from routes import all_blueprints
 
+from routes import all_blueprints
 
 from config import Config
 
@@ -181,48 +143,9 @@ def e_notaries():
     return render_template("admin/electronicnotaries.html", e_notaries=e_notaries)
 
 
-@app.route("/mydetails")
-@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
-def mydetails():
-    if current_user.notary_credentials:
-        term_issue_date = datetime.strftime(
-            current_user.notary_credentials.term_issue_date, "%m/%d/%Y"
-        )
-        term_expiration_date = datetime.strftime(
-            current_user.notary_credentials.term_expiration_date, "%m/%d/%Y"
-        )
-    else:
-        term_issue_date = None
-        term_expiration_date = None
-
-    return render_template(
-        "user/mydetails.html",
-        term_issue_date=term_issue_date,
-        term_expiration_date=term_expiration_date,
-    )
 
 
-@app.route("/findnotary")
-# @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
-def findnotary():
-    return render_template("findnotary/findnotary.html")
 
-
-@app.route("/resourcecenter")
-# @roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
-def resourcecenter():
-    return render_template("resourcecenter/resourcecenter.html")
-
-
-@app.route("/myesignature")
-@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
-def myesignature():
-    return render_template("esignatures/myesignature.html")
-
-
-@app.route("/throw_error")
-def throw_error():
-    return render_template("errorhandling/throw_error.html")
 
 
 if __name__ == "__main__":
