@@ -2,11 +2,67 @@
 
 ## Overview
 
-My project name is `Notarious` which, as Springboard's Capstone One project, is a logbook for traditional notaries and electronic notaries (a/k/a an individual "Notary" or multiple "Notaries") to record transaction details from in-person notarial acts and services they provide to clients (a/k/a "Principals" or invidually a "Principal").  I believe this project can be extended to be part of a minimally viable product that will provide New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in accordance with NYS law.  To learn more about the Electronic Notary commission there is more information [listed below](#walkthrough-of-how-electronic-notarization-is-performed).
+My project name is `Notarious` which, as Springboard's Capstone One project, is a logbook for traditional notaries and electronic notaries (a/k/a an individual "Notary" or multiple "Notaries") to record transaction details from in-person notarial acts and services they provide to clients (a/k/a "Principals" or invidually a "Principal").  I believe this project can be extended to be part of a minimally viable product ("MVP") that will provide New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in compliance with NYS law.  Throughout this `Overview` of the Capstone Project I will refer to a feature or workflow of the MVP as the reason why I made certain design decisions for my data tables even though the feature is not complete, however, keep in mind I made sure that the Capstone One criteria is satisfied in this project.  To learn more about the Electronic Notary commission and workflow there is more information [listed below](#walkthrough-of-how-electronic-notarization-is-performed).
 
 ## User Flow
 
 In order to use the logbook feature the Notary must register through an onboarding process that requires providing their Notary Public commission details along which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `/notary_log` route which provides a form and CRUD tools to create, read, update and delete a record representing a transaction between the Notary and their client (a/k/a a "Principal").  Furthermore, the Notary is required to record the information covered in **§182.9 Recordkeeping and Reporting** from the *Notary Public License Law (January 2023)* issued by *NYS Department of State Division of Licensing Services* which is included below the form as context.  This is a placeholder for more elaborate instructions that would be expected if this were an enterprise grade application.  Once the Notary submits the form the data is saved to the database and can be viewed with other records in a `html` `table` powered by `GridJS` which allows the table to be queried by keyword search and sorted.  Next I will go into more detail behind the data models I designed to accomplish the aforementioned user flow.
+
+I started with the most basic user data: `id`, `username` and `password` (hashed) and after considering the longterm goal of creating a notarial service platform I decided to create the `roles` field and establish a "many-to-many" relationship with the `Role` table.  The `Role` table defines the following roles: "Admin", "Principal", "Traditional Notary" and "Electronic Notary" which I believe such a platform would (at a minimum) require.  Along with this table structure I implemented back-end logic to grant specific restrictions and access using `flask_security`.  During the onboarding process a user must pick either the Principal, Traditional Notary or Electronic Notary role which will determine which features and parts of the website they have access to.  The Principal is the most straightforward role because they require notarial services from, and would transact with, either a Traditional or Electronic Notary.  In an effort to make this project more realistic I added a `user_details` table that requires any user, regardless of their role, to provide their full name, timezone and address.  I feel this is appropriate because the application is only viable if users are who they say they are.  From a data-table perspective the Principal-user represents the minimum amount of personal information that a user would need to provide.
+
+If a user chooses either the Traditional or Electronic Notary role then they will be prompted to fill out a `SignupNotaryForm` and provide their `notary_credentials` data which is sent to the API (hosted by [New York State - Open Data NY](https://data.ny.gov/)) as a `GET` request for a matching record.  If the API response matches the data submitted by the user then they will be granted the role of either Traditional or Electronic Notary, respectively.  Keep in mind that commission data is public so additional identity proofing and credential analysis  would need to be added to achieve a MVP or enterprise level application.  Such identity proofing and credential analysis service providers include `ID.ME` and `Stripe`.
+
+The Traditional and Electronic Notary roles, in addition to being mutually exclusive, require features specific to their commission as well as the ability to engage other Notaries for services because a Notary cannot notarize their own signature and cannot perform "... notarial acts for transactions in which the notary is a party or directly and pecuniarily interested in the transaction" (§182.3 Requirements for Notaries(a)(5)).  Furthermore, a Traditional Notary can only perform in-person notarial acts whereas the Electronic Notary can perform both in-person and electronic notarial acts.  The notary logbook feature is available to both Notaries and the Traditional Notary will only be able to submit a form for in-person notarial acts whereas the Electronic Notary will have additional form related fields so they can enter a record that represents an in-person or an electronic notarial act.  In the context of the MVP this logbook feature would be automated for electronic notarial acts but for now it requires manual data entry.
+
+Furthermore, regardless of which of the three main roles they pick the user may also request the "Admin" role.  This is a placeholder for a stetch-goal feature where a Notary's employer may want to assign an Admin to their Notarious account to manage the many other notaries and their transactions given the Notary's recordkeeping requirements. Furthermore, the Admin has access to all aspects of the website and the ability to view the records of all notaries associated with their mutual employer the latter of which is an unimplemented feature.  
+
+
+```
+sequenceDiagram
+    participant User
+    participant /signup as /signup Route
+    participant SignupForm
+    participant /signup_user_details as /signup_user_details Route
+    participant UserDetailsForm
+
+    User->>+ /signup: GET /signup
+    /signup->>+SignupForm: Display SignupForm (auth/signup.html)
+    SignupForm-->>- /signup: User submits form
+    /signup->>/signup: Validate form
+    alt User exists
+        /signup->>User: Flash "User already exists"
+        /signup->>/signup: Redirect to /signup
+    else Invalid role
+        /signup->>User: Flash "Invalid role"
+        /signup->>/signup: Redirect to /signup
+    else Form valid
+        /signup->>/signup: Store signup_form_data in session
+        /signup->>User: Redirect to /signup_user_details
+    end
+
+    User->>+ /signup_user_details: GET /signup_user_details
+    /signup_user_details->>+UserDetailsForm: Display UserDetailsForm (auth/signup_user_details.html)
+    UserDetailsForm-->>- /signup_user_details: User submits form
+    /signup_user_details->>/signup_user_details: Validate form
+    alt Form valid
+        /signup_user_details->>/signup_user_details: Store signup_user_details_form_data in session
+        /signup_user_details->>/signup_user_details: Retrieve role_ids from session
+        /signup_user_details->>/signup_user_details: Query Role table, store results
+        alt Roles include Admin and Principal
+            /signup_user_details->>User: Redirect to signup_admin_view
+        else Roles include Admin and (Traditional Notary or Electronic Notary)
+            /signup_user_details->>User: Redirect to signup_notary_view
+        else Role is Principal only
+            /signup_user_details->>User: Redirect to confirm_registration_view
+        else Role is (Traditional Notary or Electronic Notary) only
+            /signup_user_details->>User: Redirect to signup_notary_view
+        else
+            /signup_user_details->>User: Redirect to throw_error
+        end
+    end
+```
+
+
 
 ### User Data Model
 
