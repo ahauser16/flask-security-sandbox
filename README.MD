@@ -1,6 +1,49 @@
 # Notarious
 
-This project is primarily focused on satisfying Springboard's criteria for the Capstone One project with the longterm goal of providing New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in accordance with NYS law. The Capstone One project is a logbook for traditional notaries and electronic notaries to record in-person notarial acts and services. Before being able to use the logbook feature the user must register through an onboarding process that includes providing their Notary Public commission details which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `notary_log` route
+## Overview
+
+My project name is `Notarious` which, as Springboard's Capstone One project, is a logbook for traditional notaries and electronic notaries (a/k/a an individual "Notary" or multiple "Notaries") to record transaction details from in-person notarial acts and services they provide to clients (a/k/a "Principals" or invidually a "Principal").  I believe this project can be extended to be part of a minimally viable product that will provide New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in accordance with NYS law.  To learn more about the Electronic Notary commission there is more information [listed below](#walkthrough-of-how-electronic-notarization-is-performed).
+
+## User Flow
+
+In order to use the logbook feature the Notary must register through an onboarding process that requires providing their Notary Public commission details along which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `/notary_log` route which provides a form and CRUD tools to create, read, update and delete a record representing a transaction between the Notary and their client (a/k/a a "Principal").  Furthermore, the Notary is required to record the information covered in **§182.9 Recordkeeping and Reporting** from the *Notary Public License Law (January 2023)* issued by *NYS Department of State Division of Licensing Services* which is included below the form as context.  This is a placeholder for more elaborate instructions that would be expected if this were an enterprise grade application.  Once the Notary submits the form the data is saved to the database and can be viewed with other records in a `html` `table` powered by `GridJS` which allows the table to be queried by keyword search and sorted.  Next I will go into more detail behind the data models I designed to accomplish the aforementioned user flow.
+
+### User Data Model
+
+```mermaid
+erDiagram
+    USER {
+        int id PK "autoincrement=True"
+        string email "unique=True"
+        string password "nullable=False"
+        boolean active
+        int employer_id FK
+    }
+    ROLE {
+    }
+    NOTARYCREDENTIALS {
+    }
+    USERDETAILS {
+    }
+    EMPLOYER_DETAILS {
+        int id PK
+    }
+    DOCUMENTROLE {
+    }
+
+    USER ||--o{ ROLE : roles
+    USER ||--|{ NOTARYCREDENTIALS : notary_credentials
+    USER ||--|{ USERDETAILS : user_details
+    USER ||--o{ DOCUMENTROLE : document_roles
+    USER ||--|| EMPLOYER_DETAILS : employer_id
+```
+
+```mermaid
+graph LR
+    A --> B
+    B --> C
+    C --> A
+```
 
 ## Installation
 
@@ -80,7 +123,7 @@ Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your s
 - `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
 - `\q` : Quit psql.
 
-## my public credentials
+### my public credentials
 
 ARTHUR John HAUSER
 01HA0018990
@@ -89,8 +132,39 @@ Electronic
 12/21/2023
 12/21/2027
 
-this tutorial is from here:
-https://www.geeksforgeeks.org/flask-role-based-access-control/
+
+
+### Walkthrough of how electronic notarization is performed:
+> #### How is electronic notarization performed?
+>Electronic notarization is done by a registered electronic notary using commercially available software that complies with Department of State regulations.  To provide an electronic notarization, the notary public must be physically located within the State of New York at the time of the notarization.  The notary must identify the remote signer (also known as the “principal”) of the document through any of the following three methods:
+>1. the notary’s personal knowledge of the signer;
+>2. by means of communication technology that facilitates remote presentation by the signer of an official, acceptable form of ID, credential analysis, and identity proofing; or
+>3. through oath or affirmation of a witness who personally knows the signer, and who is either personally known to the notary or identified by the previously referenced means of communication technology.
+>
+>Commercial software is available to notaries public to perform identify proofing and credential analysis.
+>
+>Regardless of the method used to confirm the identity of the signer, for electronic notarizations where the document signer appears remotely, the notary must be able to see and interact, in real-time, with the remote signer of the document through audio-visual communication technology.  Regardless of the location of the signer, this technology must have security protocols in place to prevent unauthorized access.  The notary must make and keep an audio-visual recording of the electronic notarization and ensure that there is a back-up of the recording. This recording must be kept for a minimum of 10 years.
+>
+>After the signer has executed the document, it must be transmitted to the notary public for officiating.  This is done by presentation to the notary of the executed document through the software platform. The notary must confirm that the document is the same as the one signed electronically in the notary public’s presence before applying the notary stamp and signature to the document.  For electronic notarial acts performed remotely, the following statement must be added to the jurat “This electronic notarial act involved a remote online appearance involving the use of communication technology.”
+>
+>The electronic notarial process does not require transmission of paper records or ink signatures of either the signer (i.e., principal) or electronic notary.  The result of the process is an electronically created, electronically stored document that may be done online, and may be papered out for recording or other purposes.
+
+Source: [NYSDOS - faq](https://dos.ny.gov/notary-public-frequently-asked-questions)
+
+### Additional Background on the Electronic Notary Commission:
+
+- [The Future Is Here: New York Approves Remote Online Notarization by Michael A. Markowitz](https://nysba.org/the-future-is-here-new-york-approves-remote-online-notarization/)
+- [New York State Department of State website](https://dos.ny.gov/notary-public)
+  - [Frequently Asked Questions](https://dos.ny.gov/notary-public-frequently-asked-questions)
+  - [Notary Public License Law](https://dos.ny.gov/system/files/documents/2024/05/notary.pdf)
+  
+### Additional Legal Standards and Requirements
+
+- [National Institute of Standards and Technology (NIST) - Identity and Access Management Projects](https://www.nist.gov/identity-access-management/identity-and-access-management-projects)
+  - [NIST Special Publication 800-63-3 - Digital Identity Guidelines](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63-3.pdf)
+
+
+
 
 ## reminders on how to work on this project:
 
