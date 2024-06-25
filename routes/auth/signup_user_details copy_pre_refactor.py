@@ -20,16 +20,39 @@ def signup_user_details_view():
             "state": form.state.data,
             "zip_code": form.zip_code.data,
             "timezone": form.timezone.data,
+            "is_employer_associated": form.is_employer_associated.data,  # Ensure this field is captured
         }
 
         session["signup_user_details_form_data"] = signup_user_details_form_data
-        # Store is_employer_associated separately in session if needed for logic but not in the database
-        session["is_employer_associated"] = form.is_employer_associated.data
         logging.info(f"signup_user_details_form_data: {signup_user_details_form_data}")
 
         # Get the role_ids from the session
         signup_form_data = session.get("signup_form_data")
+        # role_ids = signup_form_data.get("role_ids") if signup_form_data else None
+        # logging.info(f"role_ids retrieved from session: {role_ids}")
 
+        # Query the Role table once and store the results in a dictionary
+        # roles = {role.name: role.id for role in Role.query.all()}
+        # logging.info(
+        #     f"role_ids retrieved from the Role table and store them in a dicitonary as: {roles}"
+        # )
+
+        # Check the role_ids and redirect accordingly
+        # if has_roles(role_ids, roles, ["Admin", "Principal"]):
+        #     return redirect(url_for("signup_admin.signup_admin_view"))
+        # elif has_roles(role_ids, roles, ["Admin"]) and has_any_role(
+        #     role_ids, roles, ["Traditional Notary", "Electronic Notary"]
+        # ):
+        #     return redirect(url_for("signup_notary.signup_notary_view"))
+        # elif has_roles(role_ids, roles, ["Principal"]) and len(role_ids) == 1:
+        #     return redirect(url_for("confirm_registration.confirm_registration_view"))
+        # elif (
+        #     has_any_role(role_ids, roles, ["Traditional Notary", "Electronic Notary"])
+        #     and len(role_ids) == 1
+        # ):
+        #     return redirect(url_for("signup_notary.signup_notary_view"))
+        # else:
+        #     return redirect(url_for("throw_error"))
         return determine_redirect(form, signup_user_details_form_data, signup_form_data)
 
     return render_template("auth/signup_user_details.html", form=form)

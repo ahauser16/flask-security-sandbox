@@ -1,5 +1,7 @@
+# models/employer_details.py
 from . import db
 from .user import User
+
 
 class EmployerDetails(db.Model):
     __tablename__ = "employer_details"
@@ -11,6 +13,4 @@ class EmployerDetails(db.Model):
     state = db.Column(db.String(2), nullable=False)
     zip_code = db.Column(db.String(20), nullable=False)
     ein_number = db.Column(db.String(20), nullable=False, unique=True)
-    users = db.relationship("User", backref="employer", lazy=True)
-    
-    # Explanation: In this case, you're importing the db object from your __init__.py file, which is where it's initialized. This allows all parts of your application to use the same db object, which is necessary for SQLAlchemy to track changes to your models correctly. The EmployerDetails class is a SQLAlchemy model that represents the employer_details table in your database. The id column is the primary key, and the other columns represent various details about the employer. The users relationship establishes a link to the User model, which allows you to access the users associated with a particular employer.
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)

@@ -1,27 +1,27 @@
-<!-- signup_user_details.html -->
+<!-- signup_employer_details.html -->
 {% extends 'index.html' %}
 <!-- START of MACRO import -->
 <!-- END of MACRO import -->
-{% block head_title %} - Sign Up - User Details{% endblock %}
+{% block head_title %} - Sign Up - Employer Details{% endblock %}
 <!-- START of the block main_content -->
 {% block main_content %}
-<section aria-labelledby="user-details-sign-up">
-  <h2 id="user-details-sign-up">Sign Up - User Details</h2>
+<section aria-labelledby="employer-details-sign-up">
+  <h2 id="employer-details-sign-up">Sign Up - Employer Details</h2>
   <!-- check if user is already logged in -->
   {% if current_user.is_authenticated %} You are already logged in. {% else %}
   <!--   -->
   {{ msg }}
   <br />
   <form
-    action="{{ url_for('signup_user_details.signup_user_details_view') }}"
+    action="{{ url_for('signup_employer_details.signup_employer_details_view') }}"
     method="POST"
-    id="user-details-form"
+    id="employer-details-form"
   >
     <fieldset>
-      <legend>Enter your details</legend>
+      <legend>Enter your employer's details</legend>
       {{ form.hidden_tag() }} {{ form.csrf_token }}
       <!--  -->
-      {{ form.full_name.label }} {{ form.full_name() }}
+      {{ form.company_name.label }} {{ form.company_name() }}
       <br />
       {{ form.street_address_line_one.label }} {{ form.street_address_line_one()
       }}
@@ -35,10 +35,7 @@
       <br />
       {{ form.zip_code.label }} {{ form.zip_code() }}
       <br />
-      {{ form.timezone.label }} {{ form.timezone() }}
-      <br />
-      {{ form.is_employer_associated.label }} {{ form.is_employer_associated()
-      }}
+      {{ form.ein_number.label }} {{ form.ein_number() }}
       <br />
       {{ form.submit() }}
       <!-- show form errors here -->

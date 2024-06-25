@@ -15,14 +15,12 @@ import logging
 
 from forms import ConfirmRegistrationForm
 from models.database import db
-from models import (
-    User,
-    Role,
-    UserDetails,
-    NotaryCredentials,
-)
+from models import User, Role, UserDetails, NotaryCredentials, EmployerDetails
+from datetime import datetime
+
 
 confirm_registration_bp = Blueprint("confirm_registration", __name__)
+
 
 @confirm_registration_bp.route("/confirm_registration", methods=["GET", "POST"])
 def confirm_registration_view():
@@ -32,7 +30,11 @@ def confirm_registration_view():
         logging.info("Entering confirm_registration route")
 
         # Check if the required session data is available
-        required_keys = ["signup_form_data", "signup_user_details_form_data"]
+        required_keys = [
+            "signup_form_data",
+            "signup_user_details_form_data",
+            "signup_employer_details_form_data",
+        ]
         if not all(key in session for key in required_keys):
             logging.warning("Required session data not available")
             flash(
@@ -53,8 +55,12 @@ def confirm_registration_view():
         ]
         logging.info(f"Role names from session: {session_role_names}")
 
+        # Retrieve session data
         signup_form_data = session.get("signup_form_data", {})
         signup_user_details_form_data = session.get("signup_user_details_form_data", {})
+        signup_employer_details_form_data = session.get(
+            "signup_employer_details_form_data", {}
+        )
         notary_cred_api_resp = session.get("notary_cred_api_resp", {})
 
         logging.info(
@@ -66,28 +72,41 @@ def confirm_registration_view():
         logging.info(
             f"before validation notary_cred_api_resp looks like this: {notary_cred_api_resp}"
         )
+        logging.info(
+            f"before validation signup_employer_details_form_data looks like this: {signup_employer_details_form_data}"
+        )
 
         if 3 in role_ids or 4 in role_ids:
-            notary_cred_api_resp["term_issue_date"] = datetime.strftime(
+            # Convert string to datetime object using the correct format
+            term_issue_date_obj = datetime.strptime(
                 notary_cred_api_resp["term_issue_date"], "%m/%d/%Y"
             )
-            notary_cred_api_resp["term_expiration_date"] = datetime.strftime(
+            term_expiration_date_obj = datetime.strptime(
                 notary_cred_api_resp["term_expiration_date"], "%m/%d/%Y"
+            )
+            notary_cred_api_resp["term_issue_date"] = term_issue_date_obj.strftime(
+                "%m/%d/%Y"
+            )
+            notary_cred_api_resp["term_expiration_date"] = (
+                term_expiration_date_obj.strftime("%m/%d/%Y")
             )
 
         if form.validate_on_submit():
             logging.info("Form validated")
+            # Create user
             user = user_datastore.create_user(
                 email=signup_form_data["email"],
                 password=signup_form_data["password"],
             )
             logging.info(f"User created: {user}")
 
+            # Add roles to user
             for role_id in role_ids:
                 role = Role.query.get(role_id)
                 user_datastore.add_role_to_user(user, role)
             logging.info(f"Roles added to user: {role_ids}")
 
+            # Commit to save user and roles
             db.session.commit()
 
             user_details_data = signup_user_details_form_data
@@ -97,6 +116,16 @@ def confirm_registration_view():
 
             db.session.add(user_details)
             logging.info(f"User details added to session: {user_details}")
+
+            employer_details_data = signup_employer_details_form_data
+            employer_details_data["user_id"] = user.id
+            employer_details = EmployerDetails(**employer_details_data)
+            logging.info(
+                f"employer_details_data looks like this: {employer_details_data}"
+            )
+
+            db.session.add(employer_details)
+            logging.info(f"Employer details added: {employer_details}")
 
             if (
                 "Traditional Notary" in session_role_names
@@ -110,6 +139,7 @@ def confirm_registration_view():
                     "Notary credentials added to database session as {notary_credentials}"
                 )
 
+            # Final commit to save all changes
             db.session.commit()
             logging.info("Changes committed to database")
 
@@ -129,5 +159,6 @@ def confirm_registration_view():
         role_names=session_role_names,
         signup_form_data=signup_form_data,
         signup_user_details_form_data=signup_user_details_form_data,
+        signup_employer_details_form_data=signup_employer_details_form_data,
         notary_cred_api_resp=notary_cred_api_resp,
     )

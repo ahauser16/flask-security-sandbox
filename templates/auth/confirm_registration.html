@@ -42,6 +42,18 @@
     <p>Zip Code: {{ signup_user_details_form_data['zip_code'] }}</p>
     <p>Timezone: {{ signup_user_details_form_data['timezone'] }}</p>
   </section>
+  <section aria-labelledby="signup-employer-registration-details">
+    <h3 id="signup-employer-registration-details">Employer Details</h3>
+    <p>Company Name: {{ signup_employer_details_form_data['company_name'] }}</p>
+    <p>
+      Address: {{ signup_employer_details_form_data['street_address_line_one']
+      }} {{ signup_employer_details_form_data['street_address_line_two'] }}
+    </p>
+    <p>City: {{ signup_employer_details_form_data['city'] }}</p>
+    <p>State: {{ signup_employer_details_form_data['state'] }}</p>
+    <p>Zip Code: {{ signup_employer_details_form_data['zip_code'] }}</p>
+    <p>EIN Number: {{ signup_employer_details_form_data['ein_number'] }}</p>
+  </section>
 
   {% if 'Admin' in role_names %}
   <section aria-labelledby="admin-registration-details">

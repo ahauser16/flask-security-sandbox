@@ -1,107 +1,259 @@
-# Notarious
+# Notarious - Table of Contents
 
-## Overview
+- [Notarious - Table of Contents](#notarious---table-of-contents)
+  - [Project Overview](#project-overview)
+      - [I. User Flow](#i-user-flow)
+      - [II. Initial Signup](#ii-initial-signup)
+      - [III. User Details](#iii-user-details)
+      - [IV. Signup for Notaries](#iv-signup-for-notaries)
+      - [V. RBAC for Notaries](#v-rbac-for-notaries)
+      - [VI. Signup for Administrators](#vi-signup-for-administrators)
+    - [User Flow Onboarding Sequence Diagram](#user-flow-onboarding-sequence-diagram)
+    - [Data Model ERD](#data-model-erd)
+  - [How to use this application](#how-to-use-this-application)
+    - [Installation](#installation)
+    - [running the application:](#running-the-application)
+    - [Google Cloud Services instructions:](#google-cloud-services-instructions)
+    - [psql and the database:](#psql-and-the-database)
+  - [Background on Electronic Notarization](#background-on-electronic-notarization)
+    - [Walkthrough of how electronic notarization is performed:](#walkthrough-of-how-electronic-notarization-is-performed)
+    - [Additional Background on the Electronic Notary Commission:](#additional-background-on-the-electronic-notary-commission)
+    - [Additional Legal Standards and Requirements](#additional-legal-standards-and-requirements)
+  - [Helpful Debugging Notes](#helpful-debugging-notes)
+    - [Debugging notes from issue with `Flask` `session` and `Flask_Security`'s `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`](#debugging-notes-from-issue-with-flask-session-and-flask_securitys-sqlalchemysessionuserdatastore-and-sqlalchemyuserdatastore)
+    - [user\_datastore variable explained in depth](#user_datastore-variable-explained-in-depth)
+    - [Flask\_Security explained](#flask_security-explained)
 
-My project name is `Notarious` which, as Springboard's Capstone One project, is a logbook for traditional notaries and electronic notaries (a/k/a an individual "Notary" or multiple "Notaries") to record transaction details from in-person notarial acts and services they provide to clients (a/k/a "Principals" or invidually a "Principal").  I believe this project can be extended to be part of a minimally viable product ("MVP") that will provide New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in compliance with NYS law.  Throughout this `Overview` of the Capstone Project I will refer to a feature or workflow of the MVP as the reason why I made certain design decisions for my data tables even though the feature is not complete, however, keep in mind I made sure that the Capstone One criteria is satisfied in this project.  To learn more about the Electronic Notary commission and workflow there is more information [listed below](#walkthrough-of-how-electronic-notarization-is-performed).
+## Project Overview 
 
-## User Flow
+[Back to TOC](#notarious---table-of-contents)
 
-In order to use the logbook feature the Notary must register through an onboarding process that requires providing their Notary Public commission details along which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `/notary_log` route which provides a form and CRUD tools to create, read, update and delete a record representing a transaction between the Notary and their client (a/k/a a "Principal").  Furthermore, the Notary is required to record the information covered in **§182.9 Recordkeeping and Reporting** from the *Notary Public License Law (January 2023)* issued by *NYS Department of State Division of Licensing Services* which is included below the form as context.  This is a placeholder for more elaborate instructions that would be expected if this were an enterprise grade application.  Once the Notary submits the form the data is saved to the database and can be viewed with other records in a `html` `table` powered by `GridJS` which allows the table to be queried by keyword search and sorted.  Next I will go into more detail behind the data models I designed to accomplish the aforementioned user flow.
+My project name is `Notarious` which, as Springboard's Capstone One project, is a logbook for traditional notaries and electronic notaries (a/k/a an individual "Notary" or multiple "Notaries") to record transaction details from in-person notarial acts and services they provide to clients (a/k/a "Principals" or invidually a "Principal"). I believe this project can be extended to be part of a minimally viable product ("MVP") that will provide New York State based electronic notaries the online tools and platform to connect with clients, perform notarial acts and services in compliance with NYS law. Throughout this `Overview` of the Capstone Project I will refer to a feature or workflow of the MVP as the reason why I made certain design decisions for my data tables even though the feature is not complete, however, keep in mind I made sure that the Capstone One criteria is satisfied in this project. To learn more about the Electronic Notary commission and workflow there is more information [listed below](#walkthrough-of-how-electronic-notarization-is-performed).
 
-I started with the most basic user data: `id`, `username` and `password` (hashed) and after considering the longterm goal of creating a notarial service platform I decided to create the `roles` field and establish a "many-to-many" relationship with the `Role` table.  The `Role` table defines the following roles: "Admin", "Principal", "Traditional Notary" and "Electronic Notary" which I believe such a platform would (at a minimum) require.  Along with this table structure I implemented back-end logic to grant specific restrictions and access using `flask_security`.  During the onboarding process a user must pick either the Principal, Traditional Notary or Electronic Notary role which will determine which features and parts of the website they have access to.  The Principal is the most straightforward role because they require notarial services from, and would transact with, either a Traditional or Electronic Notary.  In an effort to make this project more realistic I added a `user_details` table that requires any user, regardless of their role, to provide their full name, timezone and address.  I feel this is appropriate because the application is only viable if users are who they say they are.  From a data-table perspective the Principal-user represents the minimum amount of personal information that a user would need to provide.
+#### I. User Flow
 
-If a user chooses either the Traditional or Electronic Notary role then they will be prompted to fill out a `SignupNotaryForm` and provide their `notary_credentials` data which is sent to the API (hosted by [New York State - Open Data NY](https://data.ny.gov/)) as a `GET` request for a matching record.  If the API response matches the data submitted by the user then they will be granted the role of either Traditional or Electronic Notary, respectively.  Keep in mind that commission data is public so additional identity proofing and credential analysis  would need to be added to achieve a MVP or enterprise level application.  Such identity proofing and credential analysis service providers include `ID.ME` and `Stripe`.
+[Back to TOC](#notarious---table-of-contents)
 
-The Traditional and Electronic Notary roles, in addition to being mutually exclusive, require features specific to their commission as well as the ability to engage other Notaries for services because a Notary cannot notarize their own signature and cannot perform "... notarial acts for transactions in which the notary is a party or directly and pecuniarily interested in the transaction" (§182.3 Requirements for Notaries(a)(5)).  Furthermore, a Traditional Notary can only perform in-person notarial acts whereas the Electronic Notary can perform both in-person and electronic notarial acts.  The notary logbook feature is available to both Notaries and the Traditional Notary will only be able to submit a form for in-person notarial acts whereas the Electronic Notary will have additional form related fields so they can enter a record that represents an in-person or an electronic notarial act.  In the context of the MVP this logbook feature would be automated for electronic notarial acts but for now it requires manual data entry.
+Before the user can access the logbook feature the Notary must register through an onboarding process that requires providing their Notary Public commission details along which are sent via GET request and validated against an API hosted by [New York State - Open Data NY](https://data.ny.gov/). Once the user is registered and logged in they can access the `/notary_log` route which provides a form and CRUD tools to create, read, update and delete a record representing a transaction between the Notary and their client (a/k/a a "Principal"). Furthermore, the Notary is required to record the information covered in **§182.9 Recordkeeping and Reporting** from the _Notary Public License Law (January 2023)_ issued by _NYS Department of State Division of Licensing Services_ which is included below the form as context. This is a placeholder for more elaborate instructions that would be expected if this were an enterprise grade application. Once the Notary submits the form the data is saved to the database and can be viewed with other records in a `html` `table` powered by `GridJS` which allows the table to be queried by keyword search and sorted. Next I will go into more detail behind the onboarding process and how I implemented my `Flask` routes, `Jinja` templates, `WTForms` classes, `SQLAlchemy` models and other technologies.
 
-Furthermore, regardless of which of the three main roles they pick the user may also request the "Admin" role.  This is a placeholder for a stetch-goal feature where a Notary's employer may want to assign an Admin to their Notarious account to manage the many other notaries and their transactions given the Notary's recordkeeping requirements. Furthermore, the Admin has access to all aspects of the website and the ability to view the records of all notaries associated with their mutual employer the latter of which is an unimplemented feature.  
+#### II. Initial Signup
 
+[Back to TOC](#notarious---table-of-contents)
+
+In my application, the user onboarding process is initiated at the `/signup` route, where several key technologies work together to ensure a seamless experience:
+
+1. **Flask Route (`/signup`)**: Directs users to the signup section, showcasing Flask's capability to handle URL routing and user requests efficiently.
+2. **Jinja Template (`signup.html`)**: Demonstrates the use of Flask's Jinja templating engine to dynamically render the `SignupForm`, allowing users to input their basic data including `username`, `password` (which is securely hashed), and `role`.
+3. **WTForms (`SignupForm`)**: This form class is crucial for collecting user data in a structured and secure manner, illustrating WTForms' integration with Flask for form rendering, data submission, and validation.
+4. **SQLAlchemy Model (`User` table with `role` field)**: After form submission, user data is stored in the `User` table, with the `role` field added to facilitate a many-to-many relationship with a `Role` table. This table defines essential roles for the platform: "Admin", "Principal", "Traditional Notary", and "Electronic Notary", using SQLAlchemy for ORM.
+5. **Role-Based Access Control**: Utilizing `flask_security`, I implemented backend logic to assign specific restrictions and access based on the user's role, enhancing security and customizing user experience based on their role selection.
+
+This structure not only aligns with the goal of creating a notarial service platform by connecting Notaries with potential clients but also demonstrates a deep understanding of how Flask, Jinja, WTForms, SQLAlchemy, and flask_security work together to manage user data, roles, and access rights efficiently.
+
+#### III. User Details
+
+[Back to TOC](#notarious---table-of-contents)
+
+In my application, the Principal role is designed for simplicity, requiring only notarial services. To enhance realism, I implemented a `/signup_user_details` route. This route serves multiple purposes:
+
+1. **Flask Route (`/signup_user_details`)**: Directs users to a specific part of the application where they can provide personal information. Flask routes are essential for defining URLs and handling user requests.
+2. **Jinja Template (`signup_user_details.html`)**: Utilizes Flask's templating engine, Jinja, to dynamically generate HTML pages. When the `/signup_user_details` route is accessed, the Jinja template renders the `UserDetailsForm`.
+3. **WTForms (`UserDetailsForm`)**: This form class collects user data in a structured and secure manner. WTForms integrates seamlessly with Flask to handle form rendering, data submission, and validation.
+4. **SQLAlchemy Model (`user_details` table)**: Upon form submission, the entered data is saved to the `user_details` table using SQLAlchemy, Flask's ORM of choice. This demonstrates how data persistence is managed, linking user input to database storage.
+
+This setup ensures that all users, regardless of their role, provide essential information like full name, timezone, and address. It underscores the application's reliance on authenticity and user trust, mirroring traditional notarization's emphasis on personal information accuracy. Additionally, the `user_details` table's design is flexible, allowing for future expansions to support a Minimum Viable Product (MVP).
+
+#### IV. Signup for Notaries
+
+[Back to TOC](#notarious---table-of-contents)
+
+If users select either the Traditional or Electronic Notary role they will undergo a specific process to verify their credentials:
+1. **Flask Route (`/signup_notary`)**: This route is activated when a user selects either the Traditional or Electronic Notary role. Flask efficiently handles the URL routing, directing users to the appropriate part of the application for notary registration.
+2. **Jinja Template (`signup_notary.html`)**: Utilizing Flask's Jinja templating engine, the `SignupNotaryForm` is dynamically rendered. This form is specifically designed to collect `notary_credentials` from users, showcasing Jinja's capability to generate interactive HTML forms based on user role selection.
+3. **WTForms (`SignupNotaryForm`)**: The `SignupNotaryForm` is a WTForms class that securely collects and validates the notary credentials submitted by the user. This demonstrates WTForms' role in handling form data submission and validation within Flask applications.
+4. **API Integration for Credential Verification**: The `match_notary_credentials` function sends the collected `notary_credentials` as a `GET` request to the [New York State - Open Data NY](https://data.ny.gov/) API. This step is crucial for verifying if the submitted credentials match the state's notary database, illustrating how external APIs can be integrated into Flask applications for enhanced functionality.
+5. **Conditional Role Assignment**: Upon successful credential verification, users are granted the role of Traditional Notary or Electronic Notary, based on their selection and credential match. This process underscores the application's use of conditional logic and API responses to dynamically assign user roles.
+
+Additionally, it's important to note that since commission data is public, further identity proofing and credential analysis are necessary for a Minimum Viable Product (MVP) or enterprise-level application. Services like `ID.ME` and `Stripe` could be integrated for this purpose, highlighting the application's potential for scalability and enhanced security.  In order to test that the `/signup_notary` route works you can use my Notary Public credentials below.
 
 ```
+ARTHUR John HAUSER
+01HA0018990
+Kings
+Electronic
+12/21/2023
+12/21/2027
+```
+
+#### V. RBAC for Notaries
+
+The Traditional and Electronic Notary roles are mutually exclusive, each requiring specific features tailored to their commission. Notaries are prohibited from notarizing their own signatures or performing notarial acts in transactions where they have a direct financial interest, as outlined in §182.3 Requirements for Notaries(a)(5).
+
+Key Differences:
+- **Traditional Notary**: Limited to performing in-person notarial acts.
+- **Electronic Notary**: Capable of performing both in-person and electronic notarial acts.
+
+Both roles have access to a notary logbook feature. However, the Traditional Notary's logbook is designed solely for in-person acts, while the Electronic Notary's logbook includes additional fields to record both in-person and electronic acts. Currently, the logbook requires manual data entry, but plans are in place to automate this feature for electronic notarial acts in the MVP.  This structure ensures that the application adheres to legal requirements while accommodating the distinct needs of Traditional and Electronic Notaries.
+
+#### VI. Signup for Administrators
+
+[Back to TOC](#notarious---table-of-contents)
+
+Furthermore, regardless of which of the three main roles they pick the user may also request the "Admin" role. This is a placeholder for a stetch-goal feature where a Notary's employer may want to assign an Admin to their Notarious account to manage the many other notaries and their transactions given the Notary's recordkeeping requirements. Furthermore, the Admin has access to all aspects of the website and the ability to view the records of all notaries associated with their mutual employer the latter of which is an unimplemented feature.
+[Back to TOC](#notarious---table-of-contents)
+
+### User Flow Onboarding Sequence Diagram
+
+[Back to TOC](#notarious---table-of-contents)
+
+```mermaid
 sequenceDiagram
+    title User Registration Sequence Diagram
     participant User
-    participant /signup as /signup Route
-    participant SignupForm
-    participant /signup_user_details as /signup_user_details Route
-    participant UserDetailsForm
+    participant /signup as /signup
+    participant /signup_user_details as /signup_user_details
+    participant /signup_notary as /signup_notary
+    participant /signup_admin as /signup_admin
+    participant /confirm_registration as /confirm_registration
 
-    User->>+ /signup: GET /signup
-    /signup->>+SignupForm: Display SignupForm (auth/signup.html)
-    SignupForm-->>- /signup: User submits form
-    /signup->>/signup: Validate form
-    alt User exists
-        /signup->>User: Flash "User already exists"
-        /signup->>/signup: Redirect to /signup
-    else Invalid role
-        /signup->>User: Flash "Invalid role"
-        /signup->>/signup: Redirect to /signup
-    else Form valid
-        /signup->>/signup: Store signup_form_data in session
-        /signup->>User: Redirect to /signup_user_details
+    User->>+ /signup: Clicks on /signup
+    /signup->>+ /signup_user_details: Redirects to /signup_user_details
+    Note over /signup: Jinja: auth/signup.html<br>Form: SignupForm<br>Data: email, password, role_ids
+
+    alt Principal Role
+        /signup_user_details->>+ /confirm_registration: Redirects to /confirm_registration if Principal
+        Note over /signup_user_details: Jinja: auth/signup_user_details.html<br>Form: UserDetailsForm<br>Data: full_name, address, city, state, zip, timezone
+    else Traditional or Electronic Notary
+        /signup_user_details->>+ /signup_notary: Redirects to /signup_notary if either Traditional or Electronic Notary
+        Note over /signup_user_details: Jinja: auth/signup_user_details.html<br>Form: UserDetailsForm<br>Data: full_name, address, city, state, zip, timezone
+        /signup_notary->>+ /confirm_registration: Redirects to /confirm_registration
+        Note over /signup_notary: Jinja: auth/signup_notary.html<br>Form: SignupNotaryForm<br>Data: full_name, commission_id, county, start_date, end_date
     end
 
-    User->>+ /signup_user_details: GET /signup_user_details
-    /signup_user_details->>+UserDetailsForm: Display UserDetailsForm (auth/signup_user_details.html)
-    UserDetailsForm-->>- /signup_user_details: User submits form
-    /signup_user_details->>/signup_user_details: Validate form
-    alt Form valid
-        /signup_user_details->>/signup_user_details: Store signup_user_details_form_data in session
-        /signup_user_details->>/signup_user_details: Retrieve role_ids from session
-        /signup_user_details->>/signup_user_details: Query Role table, store results
-        alt Roles include Admin and Principal
-            /signup_user_details->>User: Redirect to signup_admin_view
-        else Roles include Admin and (Traditional Notary or Electronic Notary)
-            /signup_user_details->>User: Redirect to signup_notary_view
-        else Role is Principal only
-            /signup_user_details->>User: Redirect to confirm_registration_view
-        else Role is (Traditional Notary or Electronic Notary) only
-            /signup_user_details->>User: Redirect to signup_notary_view
-        else
-            /signup_user_details->>User: Redirect to throw_error
-        end
+    alt Requested Admin Role
+        /signup_user_details->>+ /signup_admin: Redirects to /signup_admin if Admin requested
+        /signup_notary->>+ /signup_admin: Redirects to /signup_admin if Admin requested
+        /signup_admin->>+ /confirm_registration: Redirects to /confirm_registration
+        Note over /signup_admin: Jinja: auth/signup_admin.html<br>Form: SignupAdminForm<br>Data: special_code
     end
+
+    /confirm_registration-->>- User: Finalizes registration
+    Note over /confirm_registration: Jinja: auth/confirm_registration.html<br>Form: ConfirmRegistrationForm<br>Data: session data, user details, notary credentials
 ```
 
+### Data Model ERD
 
-
-### User Data Model
+[Back to TOC](#notarious---table-of-contents)
 
 ```mermaid
 erDiagram
+    title Data Table Entity Relational Diagram
     USER {
         int id PK "autoincrement=True"
         string email "unique=True"
-        string password "nullable=False"
+        string password
         boolean active
         int employer_id FK
     }
     ROLE {
+        int id PK
+        string name "unique=True"
     }
-    NOTARYCREDENTIALS {
+    NOTARY_CREDENTIALS {
+        int id PK
+        int user_id FK
+        string commission_holder_name
+        string commission_number_uid
+        string commissioned_county
+        string commission_type_traditional_or_electronic
+        datetime term_issue_date
+        datetime term_expiration_date
     }
-    USERDETAILS {
+    USER_DETAILS {
+        int id PK
+        int user_id FK
+        string timezone
+        string full_name
+        string street_address_line_one
+        string street_address_line_two
+        string city
+        string state
+        string zip_code
+    }
+    NOTARIAL_ACT {
+        int id PK
+        int user_id FK
+        datetime date_time
+        string act_type
+        string principal_name
+        string principal_addressLine1
+        string principal_addressLine2
+        string principal_city
+        string principal_state
+        string principal_zipCode
+        int service_number
+        string service_type
+        string principal_credential_type
+        string communication_tech
+        string certification_authority
+        string verification_provider
+    }
+    PDF_DOCUMENT {
+        int id PK
+        string filename
+        string filepath
+        datetime upload_date
+        string status
+        int user_id FK
+        int size
+        string content_type
+        string notes
+    }
+    DOCUMENT_ROLE {
+        int id PK
+        string name "unique=True"
     }
     EMPLOYER_DETAILS {
         int id PK
+        string name
+        string street_address_line_one
+        string street_address_line_two
+        string city
+        string state
+        string zip_code
+        string ein_number "unique=True"
     }
-    DOCUMENTROLE {
+    ROLES_USERS {
+        int user_id FK
+        int role_id FK
+    }
+    DOCUMENT_ROLE_USERS {
+        int user_id FK
+        int document_role_id FK
+    }
+    DOCUMENT_ROLE_DOCUMENTS {
+        int pdf_document_id FK
+        int document_role_id FK
     }
 
-    USER ||--o{ ROLE : roles
-    USER ||--|{ NOTARYCREDENTIALS : notary_credentials
-    USER ||--|{ USERDETAILS : user_details
-    USER ||--o{ DOCUMENTROLE : document_roles
-    USER ||--|| EMPLOYER_DETAILS : employer_id
+    USER ||--o{ ROLES_USERS : ""
+    ROLE ||--o{ ROLES_USERS : ""
+    USER ||--o{ DOCUMENT_ROLE_USERS : ""
+    USER ||--|| NOTARY_CREDENTIALS : "has"
+    USER ||--|| USER_DETAILS : "has"
+    USER ||--o{ NOTARIAL_ACT : "records"
+    USER ||--o{ PDF_DOCUMENT : "uploads"
+    PDF_DOCUMENT ||--o{ DOCUMENT_ROLE_DOCUMENTS : ""
+    DOCUMENT_ROLE ||--o{ DOCUMENT_ROLE_DOCUMENTS : ""
+    DOCUMENT_ROLE ||--o{ DOCUMENT_ROLE_USERS : ""
+    USER ||--|| EMPLOYER_DETAILS : "employed_by"
 ```
 
-```mermaid
-graph LR
-    A --> B
-    B --> C
-    C --> A
-```
+## How to use this application
 
-## Installation
+### Installation
+
+[Back to TOC](#notarious---table-of-contents)
 
 Provide detailed instructions on how to install your project. For example:
 
@@ -121,6 +273,8 @@ Provide detailed instructions on how to install your project. For example:
 
 ### running the application:
 
+[Back to TOC](#notarious---table-of-contents)
+
 1. There is a virtual environment already set up for this project so you need to activate it:
 
 `source venv/bin/activate`
@@ -137,6 +291,8 @@ When you run `flask run`, Flask uses the value of `FLASK_APP` to find your appli
 
 ### Google Cloud Services instructions:
 
+[Back to TOC](#notarious---table-of-contents)
+
 This application uses Google Cloud Services and requires authentication via a service account key. Follow these steps to set up the authentication:
 
 Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your service account key file. Replace `/path/to/your/service-account-file.json` with the actual path to your JSON file. You can do this in the terminal with the following command:
@@ -144,6 +300,8 @@ Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your s
 `export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"`
 
 ### psql and the database:
+
+[Back to TOC](#notarious---table-of-contents)
 
 1. Since this is a Unix-based system you must activate the PostgreSQL service with the command:
    NB--> be prepared to enter your `psql` password
@@ -179,204 +337,55 @@ Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your s
 - `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
 - `\q` : Quit psql.
 
-### my public credentials
+## Background on Electronic Notarization
 
-ARTHUR John HAUSER
-01HA0018990
-Kings
-Electronic
-12/21/2023
-12/21/2027
-
-
+[Back to TOC](#notarious---table-of-contents)
 
 ### Walkthrough of how electronic notarization is performed:
+
+[Back to TOC](#notarious---table-of-contents)
+
 > #### How is electronic notarization performed?
->Electronic notarization is done by a registered electronic notary using commercially available software that complies with Department of State regulations.  To provide an electronic notarization, the notary public must be physically located within the State of New York at the time of the notarization.  The notary must identify the remote signer (also known as the “principal”) of the document through any of the following three methods:
->1. the notary’s personal knowledge of the signer;
->2. by means of communication technology that facilitates remote presentation by the signer of an official, acceptable form of ID, credential analysis, and identity proofing; or
->3. through oath or affirmation of a witness who personally knows the signer, and who is either personally known to the notary or identified by the previously referenced means of communication technology.
 >
->Commercial software is available to notaries public to perform identify proofing and credential analysis.
+> Electronic notarization is done by a registered electronic notary using commercially available software that complies with Department of State regulations. To provide an electronic notarization, the notary public must be physically located within the State of New York at the time of the notarization. The notary must identify the remote signer (also known as the “principal”) of the document through any of the following three methods:
 >
->Regardless of the method used to confirm the identity of the signer, for electronic notarizations where the document signer appears remotely, the notary must be able to see and interact, in real-time, with the remote signer of the document through audio-visual communication technology.  Regardless of the location of the signer, this technology must have security protocols in place to prevent unauthorized access.  The notary must make and keep an audio-visual recording of the electronic notarization and ensure that there is a back-up of the recording. This recording must be kept for a minimum of 10 years.
+> 1.  the notary’s personal knowledge of the signer;
+> 2.  by means of communication technology that facilitates remote presentation by the signer of an official, acceptable form of ID, credential analysis, and identity proofing; or
+> 3.  through oath or affirmation of a witness who personally knows the signer, and who is either personally known to the notary or identified by the previously referenced means of communication technology.
 >
->After the signer has executed the document, it must be transmitted to the notary public for officiating.  This is done by presentation to the notary of the executed document through the software platform. The notary must confirm that the document is the same as the one signed electronically in the notary public’s presence before applying the notary stamp and signature to the document.  For electronic notarial acts performed remotely, the following statement must be added to the jurat “This electronic notarial act involved a remote online appearance involving the use of communication technology.”
+> Commercial software is available to notaries public to perform identify proofing and credential analysis.
 >
->The electronic notarial process does not require transmission of paper records or ink signatures of either the signer (i.e., principal) or electronic notary.  The result of the process is an electronically created, electronically stored document that may be done online, and may be papered out for recording or other purposes.
+> Regardless of the method used to confirm the identity of the signer, for electronic notarizations where the document signer appears remotely, the notary must be able to see and interact, in real-time, with the remote signer of the document through audio-visual communication technology. Regardless of the location of the signer, this technology must have security protocols in place to prevent unauthorized access. The notary must make and keep an audio-visual recording of the electronic notarization and ensure that there is a back-up of the recording. This recording must be kept for a minimum of 10 years.
+>
+> After the signer has executed the document, it must be transmitted to the notary public for officiating. This is done by presentation to the notary of the executed document through the software platform. The notary must confirm that the document is the same as the one signed electronically in the notary public’s presence before applying the notary stamp and signature to the document. For electronic notarial acts performed remotely, the following statement must be added to the jurat “This electronic notarial act involved a remote online appearance involving the use of communication technology.”
+>
+> The electronic notarial process does not require transmission of paper records or ink signatures of either the signer (i.e., principal) or electronic notary. The result of the process is an electronically created, electronically stored document that may be done online, and may be papered out for recording or other purposes.
 
 Source: [NYSDOS - faq](https://dos.ny.gov/notary-public-frequently-asked-questions)
 
 ### Additional Background on the Electronic Notary Commission:
 
+[Back to TOC](#notarious---table-of-contents)
+
 - [The Future Is Here: New York Approves Remote Online Notarization by Michael A. Markowitz](https://nysba.org/the-future-is-here-new-york-approves-remote-online-notarization/)
 - [New York State Department of State website](https://dos.ny.gov/notary-public)
   - [Frequently Asked Questions](https://dos.ny.gov/notary-public-frequently-asked-questions)
   - [Notary Public License Law](https://dos.ny.gov/system/files/documents/2024/05/notary.pdf)
-  
+
 ### Additional Legal Standards and Requirements
+
+[Back to TOC](#notarious---table-of-contents)
 
 - [National Institute of Standards and Technology (NIST) - Identity and Access Management Projects](https://www.nist.gov/identity-access-management/identity-and-access-management-projects)
   - [NIST Special Publication 800-63-3 - Digital Identity Guidelines](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63-3.pdf)
 
+## Helpful Debugging Notes
 
+[Back to TOC](#notarious---table-of-contents)
 
+### Debugging notes from issue with `Flask` `session` and `Flask_Security`'s `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`
 
-## reminders on how to work on this project:
-
-last commit includes broken code related to the error below:
-
-Google Cloud Services is too complicated to set up at this time but the `/mydocuments` route I was working with is below followed by the error.
-
-```
-@app.route("/mydocuments", methods=["GET", "POST"])
-@roles_accepted("Admin", "Principal", "Traditional Notary", "Electronic Notary")
-def mydocuments():
-    form = UploadDocumentForm()
-    if form.validate_on_submit():
-        f = form.document.data
-        filename = secure_filename(f.filename)
-
-        # Create a Cloud Storage client.
-        gcs = storage.Client.from_service_account_json(
-            app.config["GOOGLE_APPLICATION_CREDENTIALS"]
-        )
-
-        # Get the bucket that the file will be uploaded to.
-        bucket = gcs.get_bucket(current_app.config["NOTARIOUS_TEST_BUCKET"])
-
-        # Create a new blob and upload the file's content.
-        blob = bucket.blob(filename)
-        blob.upload_from_string(f.read(), content_type=f.content_type)
-
-        # Make the blob publicly viewable.
-        blob.make_public()
-
-        # The URL can be used to directly access the uploaded file.
-        file_url = blob.public_url
-        # Create a new PDFDocument object
-        document = PDFDocument(
-            filename=filename,
-            file_url=file_url,
-            user_id=current_user.id,
-            size=blob.size,
-            content_type=f.content_type,
-        )
-
-        # Get the document role
-        document_role_name = form.document_role.data
-        document_role = DocumentRole.query.filter_by(name=document_role_name).first()
-
-        # Add the document role to the document
-        document.document_roles.append(document_role)
-
-        # Add the document to the session and commit
-        db.session.add(document)
-        db.session.commit()
-
-        return redirect(url_for("mydocuments"))
-    return render_template("mydocuments.html", form=form)
-```
-
-error:
-
-```
-127.0.0.1 - - [04/Jun/2024 19:24:23] "POST /mydocuments HTTP/1.1" 500 -
-Traceback (most recent call last):
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 2552, in __call__
-    return self.wsgi_app(environ, start_response)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 2532, in wsgi_app
-    response = self.handle_exception(e)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 2529, in wsgi_app
-    response = self.full_dispatch_request()
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 1825, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 1823, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask/app.py", line 1799, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/flask_security/decorators.py", line 216, in decorated_view
-    return fn(*args, **kwargs)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/app.py", line 695, in mydocuments
-    bucket = gcs.get_bucket(current_app.config["NOTARIOUS_TEST_BUCKET"])
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/storage/client.py", line 857, in get_bucket
-    bucket.reload(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/storage/bucket.py", line 1083, in reload
-    super(Bucket, self).reload(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/storage/_helpers.py", line 300, in reload
-    api_response = client._get_resource(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/storage/client.py", line 462, in _get_resource
-    return self._connection.api_request(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/storage/_http.py", line 78, in api_request
-    return call()
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary.py", line 293, in retry_wrapped_func
-    return retry_target(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary.py", line 153, in retry_target
-    _retry_error_helper(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/api_core/retry/retry_base.py", line 212, in _retry_error_helper
-    raise final_exc from source_exc
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary.py", line 144, in retry_target
-    result = target()
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/_http/__init__.py", line 482, in api_request
-    response = self._make_request(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/_http/__init__.py", line 341, in _make_request
-    return self._do_request(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/cloud/_http/__init__.py", line 379, in _do_request
-    return self.http.request(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/auth/transport/requests.py", line 537, in request
-    self.credentials.before_request(auth_request, method, url, request_headers)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/auth/credentials.py", line 230, in before_request
-    self._blocking_refresh(request)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/auth/credentials.py", line 193, in _blocking_refresh
-    self.refresh(request)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/oauth2/service_account.py", line 445, in refresh
-    access_token, expiry, _ = _client.jwt_grant(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/oauth2/_client.py", line 308, in jwt_grant
-    response_data = _token_endpoint_request(
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/oauth2/_client.py", line 279, in _token_endpoint_request
-    _handle_error_response(response_data, retryable_error)
-  File "/home/haus/springboard_bootcamp_dec_2023/flask-rbac-tutorial/venv/lib/python3.10/site-packages/google/oauth2/_client.py", line 72, in _handle_error_response
-    raise exceptions.RefreshError(
-google.auth.exceptions.RefreshError: ('invalid_grant: Invalid JWT: Token must be a short-lived token (60 minutes) and in a reasonable timeframe. Check your iat and exp values in the JWT claim.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT: Token must be a short-lived token (60 minutes) and in a reasonable timeframe. Check your iat and exp values in the JWT claim.'})
-```
-
-Start next session to debug using the following instructions:
-
-The error message indicates that the JWT (JSON Web Token) used for authentication with Google Cloud Storage is invalid. The error message suggests that the token must be a short-lived token (60 minutes) and in a reasonable timeframe.
-
-This error can occur if the system clock on your machine is not synchronized with the correct time. The JWT includes an issued at time (iat) and an expiration time (exp), and if your system clock is too far ahead or behind, the token may be considered invalid.
-
-Here are a few steps to fix this issue:
-
-1. Check your system clock and ensure it's correct. If it's not, correct it.
-
-2. If you're using a service account for authentication, make sure the service account has the necessary permissions to access the bucket.
-
-3. If you're generating the JWT yourself, ensure that the iat (issued at) and exp (expiration) claims are set correctly. The exp claim should be a timestamp in the future, but not more than 60 minutes from the iat claim.
-
-4. If you're using a library to authenticate, it may be handling the JWT generation for you. In this case, updating the library to the latest version may help.
-
-5. If none of the above steps work, you may need to create a new service account and use it for authentication.
-
-### debug notes continued 6/7//24:
-
-```
-The error message indicates that the JWT token used for authentication is invalid because it's not a short-lived token (60 minutes) and/or it's not in a reasonable timeframe. This could be due to the iat (issued at) and exp (expiration) values in the JWT claim.
-
-Given that you've already checked your system clock and it's correct, the issue might be with how the JWT token is being generated or used in your application. Here are a few things you can check:
-
-1. Token Generation: Ensure that the JWT token is being generated correctly, with the iat set to the current time and the exp set to 60 minutes from the current time.
-
-2. Token Usage: Ensure that the token is being used immediately after being generated and not being stored or reused. JWT tokens are meant to be used once and then discarded.
-
-3. Service Account Key: Ensure that the service account key file used to authenticate your application is correct and up-to-date. If you're not sure, you can create a new service account key file in the Google Cloud Console and update your application to use the new key file.
-
-4. Library Versions: Ensure that you're using the latest versions of the Google Cloud client libraries. Sometimes, these kinds of issues can be caused by bugs in older versions of the libraries.
-
-If none of these suggestions solve the issue, you might want to reach out to Google Cloud Support or the community support forums for more help.
-```
-
-## Debugging notes from issue with `Flask` `session` and `Flask_Security`'s `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore`
+[Back to TOC](#notarious---table-of-contents)
 
 1. Flask's `session` object: This is a way to store information specific to a user from one request to the next. It's a dictionary-like object that uses a signed cookie to keep the session secure. In your code, you're using the session to store the email, password, and role_id of a user during the signup process. This data is then available to you in subsequent requests, even if they happen in a different route, like `/notaryauth`.
 
@@ -388,7 +397,9 @@ On the other hand, `SQLAlchemyUserDatastore` commits changes immediately. In you
 
 In terms of how these are impacting your code, the Flask `session` is allowing you to store user data across requests, while the `SQLAlchemyUserDatastore` is letting you interact with your User and Role models. However, it's unusual to use both `SQLAlchemySessionUserDatastore` and `SQLAlchemyUserDatastore` in the same application. Typically, you would choose one or the other based on whether you want to use session-based transactions or not.
 
-### user_datastore variable explained in depth:
+### user_datastore variable explained in depth
+
+[Back to TOC](#notarious---table-of-contents)
 
 `user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)`
 
@@ -404,9 +415,9 @@ Here's a breakdown of the parameters:
 
 The `SQLAlchemySessionUserDatastore` instance (`user_datastore`) can then be used to create users, roles, and to add roles to users, among other things. It's designed to work with SQLAlchemy's session-based transactions, which means it **doesn't commit changes to the database immediately**. Instead, it waits until you call `db.session.commit()`. This can be useful if you want to make multiple changes and then commit them all at once.
 
----
-
 ### Flask_Security explained
+
+[Back to TOC](#notarious---table-of-contents)
 
 `security = Security(app, user_datastore)`
 
@@ -440,12 +451,3 @@ For example, for the `/login` route, `Flask-Security` will create a view functio
 
 All of this setup is done automatically when you create an instance of the `Security` class and pass in your Flask application and datastore. This saves you the time and effort of having to create these routes, views, and templates yourself.
 
-### notes from call with Mike @ Springboard
-
-https://jsdoc.app/tags-example
-https://docs.oracle.com/javase/8/docs/api/
-https://docs.python.org/3/library/pydoc.html
-https://medium.com/@peterkong/comparison-of-python-documentation-generators-660203ca3804
-
-use this documentation guide to create basic documentation for the project.
-https://www.sphinx-doc.org/en/master/usage/quickstart.html

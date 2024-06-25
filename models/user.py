@@ -15,10 +15,10 @@ class User(db.Model, UserMixin):
         "NotaryCredentials", backref="notary_credentials", uselist=False
     )
     user_details = db.relationship("UserDetails", backref="user_details", uselist=False)
-    employer_id = db.Column(
-        db.Integer, db.ForeignKey("employer_details.id"), nullable=True
-    )
+    employer_id = db.Column(db.Integer, db.ForeignKey("employer_details.id"), nullable=True)
+
     # The document_roles field is a relationship field that links a user or a document to its roles.
     document_roles = db.relationship(
         "DocumentRole", secondary=document_role_users, backref="users"
     )
+    employer = db.relationship("EmployerDetails", backref="user", uselist=False)
