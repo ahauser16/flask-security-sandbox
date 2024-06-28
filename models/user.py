@@ -15,10 +15,13 @@ class User(db.Model, UserMixin):
         "NotaryCredentials", backref="notary_credentials", uselist=False
     )
     user_details = db.relationship("UserDetails", backref="user_details", uselist=False)
-    employer_id = db.Column(db.Integer, db.ForeignKey("employer_details.id"), nullable=True)
-
-    # The document_roles field is a relationship field that links a user or a document to its roles.
+    employer_id = db.Column(
+        db.Integer, db.ForeignKey("employer_details.id"), nullable=True
+    )  # This field establishes the foreign key relationship to the EmployerDetails table, indicating which employer a user is associated with.
     document_roles = db.relationship(
         "DocumentRole", secondary=document_role_users, backref="users"
-    )
-    employer = db.relationship("EmployerDetails", backref="user", uselist=False)
+    )  # The document_roles field is a relationship field that links a user or a document to its roles. The secondary parameter specifies the association table that links the user and document roles.
+    employer = db.relationship("EmployerDetails", backref="user_details", uselist=False)
+
+
+# In the EmployerDetails model, the users relationship uses the backref argument to create a reverse reference from the User model. This means each User instance will have an employer attribute that points to their EmployerDetails instance. The lazy='True' option is used to load the related User instances on access lazily.  This setup allows a one-to-many relationship where each user can have one employer, and each employer can have multiple users.

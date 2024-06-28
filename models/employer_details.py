@@ -13,4 +13,10 @@ class EmployerDetails(db.Model):
     state = db.Column(db.String(2), nullable=False)
     zip_code = db.Column(db.String(20), nullable=False)
     ein_number = db.Column(db.String(20), nullable=False, unique=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    users = db.relationship(
+        "User", backref="employer_details", lazy=True
+    )  # This adds a 'users' collection to EmployerDetails instances and a 'employer' backref to User instances
+
+    @staticmethod
+    def find_by_ein(ein_number):
+        return EmployerDetails.query.filter_by(ein_number=ein_number).first()

@@ -36,36 +36,66 @@ def signup_notary_view():
         session["notary_cred_api_resp"] = notary_cred_api_resp
         logging.info(f"notary_cred_api_resp: {notary_cred_api_resp}")
 
-        # Get the role_ids from the session
-        signup_form_data = session.get("signup_form_data")
-        role_ids = signup_form_data.get("role_ids") if signup_form_data else None
-        logging.info(f"role_ids retrieved from session: {role_ids}")
-
-        # Query the Role table to get the id of each role
-        roles = Role.query.filter(
-            Role.name.in_(["Admin", "Traditional Notary", "Electronic Notary"])
-        ).all()
-        role_ids_dict = {role.name: role.id for role in roles}
-        logging.info(f"role_ids_dict: {role_ids_dict}")
-
-        # Check the role_ids and redirect accordingly
-        if has_roles(role_ids, role_ids_dict, ["Admin"]) and has_any_role(
-            role_ids, role_ids_dict, ["Traditional Notary", "Electronic Notary"]
-        ):
-            return redirect(url_for("signup_admin.signup_admin_view"))
-        elif has_any_role(
-            role_ids, role_ids_dict, ["Traditional Notary", "Electronic Notary"]
-        ):
-            return redirect(url_for("confirm_registration.confirm_registration_view"))
-        else:
-            return redirect(url_for("throw_error.throw_error_view"))
+        return determine_redirect(session)
 
     return render_template("auth/signup_notary.html", form=form)
 
 
-def has_roles(role_ids, roles, role_names):
-    return all(roles.get(role_name) in role_ids for role_name in role_names)
+def get_roles_from_db():
+    # Query all roles from the Role table
+    roles_query = Role.query.all()
+    # Create a dictionary mapping id to name
+    roles_dict = {role.id: role.name for role in roles_query}
+    logging.info(f"roles_dict looks like: {roles_dict}")
+    return roles_dict
 
 
-def has_any_role(role_ids, roles, role_names):
-    return any(roles.get(role_name) in role_ids for role_name in role_names)
+def get_user_chosen_role_ids(session):
+    # retrieve role_ids from the session
+    user_chosen_role_ids = session.get("signup_form_data", {}).get("role_ids")
+    # return the user's chosen role IDs
+    logging.info(f"user_chosen_role_ids looks like: {user_chosen_role_ids}")
+    return user_chosen_role_ids
+
+
+def verify_user_chosen_role_ids(roles_dict, user_chosen_role_ids):
+    """
+    Verifies if the user chosen role IDs match any of the roles in roles_dict.
+
+    :param roles_dict: A dictionary of roles from the database where key is role id and value is role name.
+    :param user_chosen_role_ids: A list of role IDs chosen by the user.
+    :return: A dictionary containing the id and name of the matching roles.
+    :raises ValueError: If no matching roles are found.
+    """
+    matching_roles = {
+        role_id: roles_dict[role_id]
+        for role_id in user_chosen_role_ids
+        if role_id in roles_dict
+    }
+
+    if not matching_roles:
+        raise ValueError("unable to verify roles")
+
+    logging.info(f"matching_roles looks like: {matching_roles}")
+    return matching_roles
+
+
+def determine_redirect(session):
+    try:
+        roles_dict = get_roles_from_db()
+        user_chosen_role_ids = get_user_chosen_role_ids(session)
+        matching_roles = verify_user_chosen_role_ids(roles_dict, user_chosen_role_ids)
+
+        if "Admin" in matching_roles.values():
+            return redirect(url_for("signup_admin.signup_admin_view"))
+
+        if "Principal" in matching_roles.values():
+            return redirect(url_for("confirm_registration.confirm_registration_view"))
+
+        logging.info("no matching roles found")
+        # Add a default redirect or render_template here if no roles match
+        return redirect(url_for("signup_notary.signup_notary_view"))
+    except ValueError as e:
+        logging.error(f"Error verifying roles: {e}")
+        # Consider adding a redirect or render_template here to handle the error
+        return redirect(url_for("throw_error.throw_error_view"))

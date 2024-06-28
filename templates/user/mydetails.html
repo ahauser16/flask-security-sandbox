@@ -5,44 +5,86 @@
 <section>
   <h2>My Details</h2>
   <br />
-  <b>My email:</b>
-  <p>{{current_user.email}}</p>
-  <b>Role:</b> {% for role in current_user.roles%}
-  <p>{{role.name}}</p>
-  {% endfor %}
-  <br />
-  <b>Full Name:</b>
-  <p>{{current_user.user_details.full_name }}</p>
+  <section>
+    <h3>My Contact Info and Roles</h3>
+    <p>Full Name:</p>
+    <p>{{current_user.user_details.full_name }}</p>
+    <p>My email:</p>
+    <p>{{current_user.email}}</p>
+    <p>Role:</p>
+    {% for role in current_user.roles%}
+    <p>{{role.name}}</p>
+    {% endfor %}
+  </section>
+  <section>
+    <h3>My Address</h3>
+    <p>{{current_user.user_details.street_address_line_one }}</p>
+    <p>{{current_user.user_details.street_address_line_two }}</p>
+    <p>
+      {{current_user.user_details.city }}, {{current_user.user_details.state }}
+      {{current_user.user_details.zip_code }}
+    </p>
+  </section>
+  <section>
+    <h3>My Scheduling Info</h3>
+    <p>Timezone:</p>
+    <p>{{current_user.user_details.timezone }}</p>
+  </section>
+  {% if current_user.notary_credentials %}
+  <section>
+    <h3>My Notary Credentials</h3>
+    <p>Commission Holder Name:</p>
+    <p>{{current_user.notary_credentials.commission_holder_name }}</p>
 
-  <b>Address:</b>
-  <p>{{current_user.user_details.street_address_line_one }}</p>
-  <p>{{current_user.user_details.street_address_line_two }}</p>
-  <p>
-    {{current_user.user_details.city }}, {{current_user.user_details.state }}
-    {{current_user.user_details.zip_code }}
-  </p>
-  <b>Timezone:</b>
-  <p>{{current_user.user_details.timezone }}</p>
-  <br />
-  <b>Commission Holder Name:</b>
-  <p>{{current_user.notary_credentials.commission_holder_name }}</p>
+    <p>Commission ID:</p>
+    <p>{{current_user.notary_credentials.commission_number_uid }}</p>
 
-  <b>Commission ID:</b>
-  <p>{{current_user.notary_credentials.commission_number_uid }}</p>
+    <p>Commissioned County:</p>
+    <p>{{current_user.notary_credentials.commissioned_county }}</p>
 
-  <b>Commissioned County:</b>
-  <p>{{current_user.notary_credentials.commissioned_county }}</p>
+    <p>Commission Start Date:</p>
+    <p>{{term_issue_date}}</p>
 
-  <b>Commission Start Date:</b>
-  <p>{{term_issue_date}}</p>
+    <p>Commission Expiration Date:</p>
+    <p>{{term_expiration_date}}</p>
 
-  <b>Commission Expiration Date:</b>
-  <p>{{term_expiration_date}}</p>
+    <p>Commissioned Type:</p>
+    <p>
+      {{current_user.notary_credentials.commission_type_traditional_or_electronic
+      }}
+    </p>
+  </section>
+  {% endif %}
+  <!--      -->
+  {% if current_user.employer_details %}
+  <section>
+    <h3>My Employer Details</h3>
+    <h4>Employer Name:</h4>
+    <p>{{current_user.employer_details.name }}</p>
 
-  <b>Commissioned Type:</b>
-  <p>
-    {{current_user.notary_credentials.commission_type_traditional_or_electronic
-    }}
-  </p>
+    <h4>Employer Address</h4>
+    <p>{{current_user.employer_details.street_address_line_one }}</p>
+    <p>{{current_user.employer_details.street_address_line_two }}</p>
+    <p>
+      {{current_user.employer_details.city }},
+      {{current_user.employer_details.state }}
+      {{current_user.employer_details.zip_code }}
+    </p>
+
+    <h4>Employer EIN Number:</h4>
+    <p>{{current_user.employer_details.ein_number }}</p>
+
+    <h4>My Colleagues:</h4>
+    <ul>
+      {% for colleague in colleagues %}
+      <li>{{ colleague.user_details.full_name }}</li>
+      <!-- Assuming you have a full_name field in user_details -->
+      {% else %}
+      <li>No colleagues found.</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <!--      -->
+  {% endblock %}
 </section>
-{% endblock %}

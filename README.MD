@@ -15,6 +15,7 @@
     - [running the application:](#running-the-application)
     - [Google Cloud Services instructions:](#google-cloud-services-instructions)
     - [psql and the database:](#psql-and-the-database)
+    - [How to use `flask_migrate`](#how-to-use-flask_migrate)
   - [Background on Electronic Notarization](#background-on-electronic-notarization)
     - [Walkthrough of how electronic notarization is performed:](#walkthrough-of-how-electronic-notarization-is-performed)
     - [Additional Background on the Electronic Notary Commission:](#additional-background-on-the-electronic-notary-commission)
@@ -336,6 +337,22 @@ Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to your s
 - `\i filename` : Execute commands from a file. Replace filename with the name of the file you want to execute commands from.
 - `\o filename` : Send all query results to a file. Replace filename with the name of the file you want to send results to.
 - `\q` : Quit psql.
+
+### How to use `flask_migrate`
+
+To generate a migration script and update your data models using Flask-Migrate, follow these steps:
+
+1. Generate Migration Script: This command auto-generates a migration script from the detected changes in the models.
+
+`flask db migrate -m "Your message here"`
+
+Replace "Your message here" with a brief description of the changes or additions you've made to your models.
+
+2. Apply the Migration: This command applies the changes specified in the migration script to the database.
+
+`flask db upgrade`
+
+Ensure you have Flask-Migrate installed and properly configured in your Flask application before running these commands.
 
 ## Background on Electronic Notarization
 
