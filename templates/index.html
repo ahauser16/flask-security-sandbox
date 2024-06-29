@@ -21,6 +21,10 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='header.css') }}"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/flash-messages.css') }}"
+    />
     {% block base_head_content %}
     <!--       -->
     {% endblock %}
@@ -36,7 +40,23 @@
     Child templates should override this block to provide the main content of the page. 
     -->
     <main class="container">
-      {% block main_content %}{% endblock %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      <!-- -->
+      {% if messages %}
+      <!-- -->
+      {% for category, message in messages %}
+      <!-- -->
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      <!-- -->
+      {% endfor %}
+      <!-- -->
+      {% endif %}
+      <!-- -->
+      {% endwith %}
+      <!-- -->
+      {% block main_content %}
+      <!-- -->
+      {% endblock %}
       <!-- 
       Example section to display welcome message and application information. 
       This section is included in the base template and can be removed or overridden in child templates if not needed. 
