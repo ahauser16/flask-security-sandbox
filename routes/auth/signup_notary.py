@@ -52,10 +52,13 @@ def determine_redirect_signup_notary(session):
         user_chosen_role_ids = get_user_chosen_role_ids(session)
         matching_roles = verify_user_chosen_role_ids(roles_dict, user_chosen_role_ids)
 
+         # Check for specific roles by their names in the matching_roles values
         if "Admin" in matching_roles.values():
             return redirect(url_for("signup_admin.signup_admin_view"))
-
-        if "Principal" in matching_roles.values():
+        elif "Principal" in matching_roles.values():
+            return redirect(url_for("confirm_registration.confirm_registration_view"))
+        elif "Electronic Notary" or "Traditional Notary" in matching_roles.values():
+            # Assuming there's a specific view for Electronic Notary role
             return redirect(url_for("confirm_registration.confirm_registration_view"))
 
         logging.info("no matching roles found")

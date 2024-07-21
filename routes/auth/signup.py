@@ -6,46 +6,48 @@ from forms import SignupForm
 import logging
 from .utils import (
     get_roles_from_db,
-    verify_user_chosen_role_ids,
-    get_user_chosen_role_ids,
 )
 
 signup_bp = Blueprint("signup", __name__)
 
 
+# routes/auth/signup.py
 @signup_bp.route("/signup", methods=["GET", "POST"])
 def signup_view():
     form = SignupForm()
-    logging.info("Form submitted for validation.")
+    roles_dict = get_roles_from_db()
+    logging.info(f"roles_dict looks like: {roles_dict}")
+    chosen_role_ids = []
     if form.validate_on_submit():
-        logging.info("Form is valid.")
+        logging.info(f"the 'form' object looks like: {form}")
+        logging.info("Form submitted for validation.")
+        
         user = User.query.filter(User.email.ilike(form.email.data)).first()
         if user:
             logging.info("User already exists.")
             flash("User already exists", "error")
             return render_template("auth/signup.html", form=form)
 
-        roles_dict = get_roles_from_db()
-        user_chosen_role_ids = get_user_chosen_role_ids(session)
-        logging.info(f"User chosen role IDs: {user_chosen_role_ids}")
+        if form.is_admin.data:
+            admin_role = Role.query.filter_by(name="Admin").first()
+            if admin_role:
+                chosen_role_ids.append(admin_role.id)
+                logging.info(f"chosen_role_ids should have the Admin id added: {chosen_role_ids}")
 
-        try:
-            matching_roles = verify_user_chosen_role_ids(
-                roles_dict, user_chosen_role_ids
-            )
-            logging.info(f"Matching roles: {matching_roles}")
-        except ValueError as e:
-            logging.error(f"Error verifying roles: {e}")
-            flash(str(e), "error")
-            return render_template("auth/signup.html", form=form)
+        if form.role.data:
+            chosen_role = int(form.role.data)
+            chosen_role_ids.append(chosen_role)
+            if not chosen_role:
+                logging.info(f"chosen_role_ids should have the chosen role id added: {chosen_role_ids}")
 
         signup_form_data = {
             "email": form.email.data,
             "password": generate_password_hash(form.password.data),
-            "role_ids": list(matching_roles.keys()),
+            "role_ids": chosen_role_ids,
         }
         session["signup_form_data"] = signup_form_data
-        logging.info(f"signup_form_data: {signup_form_data}")
+        logging.info(f"signup_form_data looks like: {signup_form_data}")
+        logging.info(f"chosen_role_ids looks like: {chosen_role_ids}")
 
         return redirect(url_for("signup_user_details.signup_user_details_view"))
 

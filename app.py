@@ -55,42 +55,20 @@ logger.addHandler(handler)
 # retrieves the value of the UPLOAD_FOLDER configuration variable
 upload_folder = app.config["UPLOAD_FOLDER"]
 
+def create_roles():
+    existing_roles = {role.name for role in Role.query.all()}
+    desired_roles = ["Admin", "Principal", "Traditional Notary", "Electronic Notary"]
+    for role_name in desired_roles:
+        if role_name not in existing_roles:
+            new_role = Role(name=role_name)
+            db.session.add(new_role)
+    db.session.commit()
 
 @app.before_first_request
 # `create_tables` calls `db.create_all()` to create all tables in the database according to the schema defined in the models. This is essential for initializing the database with the necessary structure before any data can be inserted or queried.
 def create_tables():
     db.create_all()
-
-    # Populate Roles Table: the cod ebelow checks if there are any entries in the `Role` table by querying the first entry with Role.query.first(). If no entries exist (indicating the table is empty), it proceeds to create a list of `Role` objects with predefined id and name attributes. These objects represent different user roles such as "Admin", "Principal", "Traditional Notary", and "Electronic Notary". Each `Role` object is then added to the `session` with `db.session.add(role)`, and after all roles are added, the `session` is committed to the database with `db.session.commit()`, effectively saving these roles in the `Role` table. A success message is printed to indicate the roles were created successfully.
-    if not Role.query.first():
-        roles = [
-            Role(id=1, name="Admin"),
-            Role(id=2, name="Principal"),
-            Role(id=3, name="Traditional Notary"),
-            Role(id=4, name="Electronic Notary"),
-        ]
-
-        for role in roles:
-            db.session.add(role)
-
-        db.session.commit()
-        print("Roles created successfully!")
-
-    # Populate Document Roles Table: this code checks if the `DocumentRole` table is empty. If so, it creates a list of `DocumentRole` objects, each representing a document role with predefined `id` and `name` attributes. These objects are added to the `session` and committed to the database in the same manner as the `Role` objects. A success message is printed to indicate the document roles were created successfully.
-    if not DocumentRole.query.first():
-        document_roles = [
-            DocumentRole(id=1, name="Admin"),
-            DocumentRole(id=2, name="Principal"),
-            DocumentRole(id=3, name="Traditional Notary"),
-            DocumentRole(id=4, name="Electronic Notary"),
-        ]
-
-        for document_role in document_roles:
-            db.session.add(document_role)
-
-        db.session.commit()
-        print("Document roles created successfully!")
-
+    create_roles()
 
 # below is the import statement from the models package after moving the model classes to their own folder
 # Now that User and Role are defined, we can create the user_datastore and security

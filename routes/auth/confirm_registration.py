@@ -12,6 +12,7 @@ from flask_security import SQLAlchemySessionUserDatastore
 from flask_login import login_user
 from datetime import datetime
 import logging
+from flask import request  # Import at the top of your file
 
 from forms import ConfirmRegistrationForm
 from models.database import db
@@ -31,11 +32,10 @@ confirm_registration_bp = Blueprint("confirm_registration", __name__)
 def confirm_registration_view():
     user_datastore = current_app.user_datastore
     session_data = retrieve_appropriate_session_data(session)
+    form = ConfirmRegistrationForm()
 
-    try:
-        form = ConfirmRegistrationForm()
-
-        if form.validate_on_submit():
+    if form.validate_on_submit():
+        try:
             logging.info("Form validated")
             # Create user
             user = user_datastore.create_user(
@@ -45,36 +45,28 @@ def confirm_registration_view():
             logging.info(f"User created: {user}")
 
             # Add roles to user
-            role_ids = get_user_chosen_role_ids(
-                session
-            )  # Assuming this function exists and retrieves role IDs from session
+            role_ids = get_user_chosen_role_ids(session)  # Assuming this function exists and retrieves role IDs from session
             for role_id in role_ids:
                 role = Role.query.get(role_id)
                 user_datastore.add_role_to_user(user, role)
             logging.info(f"Roles added to user: {role_ids}")
 
-            # Commit to save user and roles
-            db.session.commit()
+            db.session.commit()  # Commit to save user and roles
 
-            add_all_user_data_to_db(user, session_data)
+            add_all_user_data_to_db(user, session_data)  # Assuming this function exists and adds additional user data to the database
 
-            # Final commit to save all changes
-            db.session.commit()
-            logging.info("Changes committed to database")
-
+            db.session.commit()  # Final commit to save all changes
             login_user(user)
             logging.info("User logged in and redirected to index page")
             flash("User successfully registered!", "success")
             return redirect(url_for("index"))
-        else:
-            flash(
-                "Unable to register User.  Please try again", "error"
-            )  # Flash message when form validation fails
-
-    except Exception as e:
-        logging.error(f"An error occurred during registration: {e}")
-        flash("An error occurred. Please try again.")
-        return redirect(url_for("signup.signup_view"))
+        except Exception as e:
+            logging.error(f"An error occurred during registration: {e}")
+            flash("An error occurred. Please try again.")
+            return redirect(url_for("signup.signup_view"))
+    elif request.method == "POST":
+        # Only flash the message if it's a POST request and the form is invalid
+        flash("Unable to register User. Please try again", "error")
 
     # Extract role names for the template
     roles_dict = get_roles_from_db()
@@ -90,15 +82,10 @@ def confirm_registration_view():
         form=form,
         role_names=session_role_names,
         signup_form_data=session_data.get("signup_form_data", {}),
-        signup_user_details_form_data=session_data.get(
-            "signup_user_details_form_data", {}
-        ),
-        signup_employer_details_form_data=session_data.get(
-            "signup_employer_details_form_data", {}
-        ),
+        signup_user_details_form_data=session_data.get("signup_user_details_form_data", {}),
+        signup_employer_details_form_data=session_data.get("signup_employer_details_form_data", {}),
         notary_cred_api_resp=session_data.get("notary_cred_api_resp", {}),
     )
-
 
 def retrieve_appropriate_session_data(session):
     try:

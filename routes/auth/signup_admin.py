@@ -1,6 +1,7 @@
 # routes/auth/signup_admin.py
 from flask import Blueprint, render_template, redirect, url_for, session, flash
 from forms import SignupAdminForm
+from flask import request  # Import at the top of your file
 import logging
 from models import Role
 from .utils import (
@@ -19,7 +20,7 @@ def signup_admin_view():
     # The form validation and special code handling is now within determine_redirect_signup_admin
     if form.validate_on_submit():
         return determine_redirect_signup_admin(form, session)
-    else:
+    elif request.method == "POST":
         flash(
             "incorrect passphrase", "error"
         )  # Flash message when form validation fails

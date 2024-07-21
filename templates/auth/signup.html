@@ -1,4 +1,4 @@
-<!-- signup.html -->
+<!-- templates/auth/signup.html -->
 {% extends 'index.html' %}
 <!-- START of MACRO import -->
 <!-- END of MACRO import -->
@@ -26,9 +26,7 @@
       <br />
       {{ form.role.label }}
       <br />
-      {% for value, label in form.role.choices %}
-      <input type="radio" name="role" value="{{ value }}" />{{ label }} {%
-      endfor %}
+      {{ form.role() }}
       <br />
       {{ form.is_admin.label }} {{ form.is_admin() }}
       <br />

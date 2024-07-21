@@ -1,0 +1,17 @@
+Notes from call with Mike on 7/6/24
+
+the notary table is referencing the 'meeting' and 'principal' whereas it should only reference the principal's 'id' and the notary's 'id'.  
+
+authorization and signup feature: the user can be both the "principal" and the "notary".  add a user table to signify what the user wants log in as.  who is acting as the 'notary id' and who is acting as the 'principal id'.
+
+The User can still act as a Principal in the Notary App.  Should you show the "Principal View" and the "Notary View".  
+
+The 'User Details' table should have been merged with the 'User' table since everyone is required to enter this information.
+
+For the 'Role' and 'role_users'.  We can prepopulate
+
+For the 'role' table you should prepopulate.
+
+Flask does not seed data by default.
+
+This should be documented in the README.MD. move the `app.py` file code that creates the data tables into the models folder as its own script.  run a python script with the create_tables() function
